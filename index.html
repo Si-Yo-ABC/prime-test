@@ -36,37 +36,51 @@
     </div>
 
     <script>
-        async function runTest() {
-            const digits = document.getElementById('digits').value;
-            const btn = document.getElementById('btn');
-            const loader = document.getElementById('loader');
-            const resultBox = document.getElementById('resultBox');
+    async function runTest() {
+        const digits = document.getElementById('digits').value;
+        const btn = document.getElementById('btn');
+        const loader = document.getElementById('loader');
+        const resultBox = document.getElementById('resultBox');
 
-            // --- CONFIGURATION ---
-            const API_URL = "https://si-yo-abc-prime-generator-api.hf.space/generate"; 
-            const TOKEN = "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"; 
-            // ---------------------
+        // --- CONFIGURATION ---
+        // We know this works because you tested it in the browser!
+        const API_URL = "https://si-yo-abc-prime-generator-api.hf.space/generate"; 
+        const TOKEN = "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"; 
+        // ---------------------
 
-            btn.disabled = true;
-            loader.classList.remove('hidden');
-            resultBox.classList.add('hidden');
+        btn.disabled = true;
+        loader.classList.remove('hidden');
+        resultBox.classList.add('hidden');
 
-            try {
-                const response = await fetch(`${API_URL}?digits=${digits}`, {
-                    headers: { "Authorization": `Bearer ${TOKEN}` }
-                });
-                const data = await response.json();
+        try {
+            // We add the digits to the URL as a 'query parameter'
+            const finalUrl = `${API_URL}?digits=${digits}`;
+            
+            const response = await fetch(finalUrl, {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${TOKEN}`,
+                    "Content-Type": "application/json"
+                }
+            });
 
-                document.getElementById('prime').innerText = data.prime;
-                document.getElementById('stats').innerText = `Found in ${data.time} | k=${data.k}`;
-                resultBox.classList.remove('hidden');
-            } catch (err) {
-                alert("Connection failed. Ensure Hugging Face Space is 'Running'.");
-            } finally {
-                btn.disabled = false;
-                loader.classList.add('hidden');
+            if (!response.ok) {
+                throw new Error(`Server responded with ${response.status}`);
             }
+
+            const data = await response.json();
+
+            document.getElementById('prime').innerText = data.prime;
+            document.getElementById('stats').innerText = `Found in ${data.time} | k=${data.k} | m=${data.m}`;
+            resultBox.classList.remove('hidden');
+        } catch (err) {
+            console.error(err);
+            alert("Connection error: " + err.message);
+        } finally {
+            btn.disabled = false;
+            loader.classList.add('hidden');
         }
-    </script>
+    }
+</script>
 </body>
 </html>
