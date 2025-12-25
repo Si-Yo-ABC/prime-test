@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Axiomatic Prime Generator | Hierarchy Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white p-10">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold mb-2">Axiomatic Prime Hierarchy</h1>
+        <p class="text-slate-400 mb-8">Deterministic generation via P=5 Hierarchy & Axiom 6 Filters.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                <h2 class="text-xl font-semibold mb-4">Configuration</h2>
+                <label class="block mb-2">Target Digits</label>
+                <input id="digits" type="number" value="200" class="w-full bg-slate-900 p-2 rounded mb-4">
+                
+                <button onclick="generatePrime()" class="w-full bg-blue-600 hover:bg-blue-500 p-3 rounded-lg font-bold transition">
+                    Run Benchmark
+                </button>
+            </div>
+
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                <h2 class="text-xl font-semibold mb-4">Live Benchmark</h2>
+                <div id="status" class="text-sm text-blue-400 mb-2">Ready...</div>
+                <div id="result" class="font-mono text-xs break-all bg-black p-4 rounded h-40 overflow-y-auto">
+                    Waiting for input...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function generatePrime() {
+            const status = document.getElementById('status');
+            const result = document.getElementById('result');
+            status.innerText = "Applying Axiom 6 Filters...";
+            
+            // This is where you would call your Python API
+            // For now, it's a placeholder for your logic
+            status.innerText = "LLR Testing (Hierarchy p=5)...";
+            // fetch('your-python-api-url')...
+        }
+    </script>
+</body>
+</html>
