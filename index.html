@@ -60,6 +60,24 @@
 document.getElementById('total-attempts').innerText = data.stats.total_candidates_tested;
 document.getElementById('rejections').innerText = data.stats.hidden_factor_rejections;
 document.getElementById('hit-rate').innerText = data.stats.success_ratio;
+
+        fetch(`https://YOUR-SPACE-URL.hf.space/?digits=${digits}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            console.error(data.error);
+        } else {
+            // Updating the UI with the core results
+            document.getElementById('prime-result').innerText = data.prime_tail;
+            document.getElementById('k-val').innerText = data.k_value;
+            document.getElementById('time-val').innerText = data.time;
+            
+            // Updating the Benchmark Stats
+            document.getElementById('total-attempts').innerText = data.stats.attempts;
+            document.getElementById('rejections').innerText = data.stats.rejections;
+            document.getElementById('hit-rate').innerText = data.stats.hit_rate;
+        }
+    });
         
         let startTime;
         let timerInterval;
