@@ -80,7 +80,7 @@
             clearInterval(timerInterval);
 
             document.getElementById('prime').innerText = data.prime;
-            document.getElementById('stats').innerText = `Success! Found in ${data.time} | k=${data.k}`;
+            document.getElementById('stats').innerText = `Success! Found ${data.digits} digits in ${data.time}`;
             resultBox.classList.remove('hidden');
         } catch (err) {
             clearInterval(timerInterval);
