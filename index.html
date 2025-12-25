@@ -6,53 +6,40 @@
     <title>Axiomatic Prime Hierarchy Test</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-900 text-white font-sans">
-    <div class="max-w-3xl mx-auto py-20 px-6">
-        <h1 class="text-4xl font-extrabold mb-4 text-blue-400">Axiomatic Prime Hierarchy</h1>
-        <p class="text-slate-400 mb-8">Proprietary Prime Generation via Primorial-Admissible Composites.</p>
+    <body class="bg-slate-900 text-white font-sans min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-center mb-8 text-blue-400">Prime Generation Battle: Axiomatic vs Traditional</h1>
 
-        <div class="bg-slate-800 p-8 rounded-2xl shadow-xl border border-slate-700">
-            <div class="mb-6">
-                <label class="block text-sm font-medium mb-2">Target Digits</label>
-                <input id="digits" type="number" value="200" class="w-full bg-slate-900 border border-slate-600 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-            </div>
-
-            <button onclick="runTest()" id="btn" class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-lg transition-all shadow-lg active:scale-95">
-                Generate Secure Prime
+        <div class="bg-slate-800 p-6 rounded-lg shadow-xl mb-8 flex flex-col items-center">
+            <input type="number" id="digitInput" value="200" class="bg-slate-700 text-white px-4 py-2 rounded mb-4 w-32 text-center text-xl">
+            <button onclick="runBattle()" id="genBtn" class="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-full font-bold transition-all transform hover:scale-105">
+                START BENCHMARK
             </button>
-
-            <div id="loader" class="hidden mt-6 text-center text-blue-300 animate-pulse">Running Deterministic LLR Test...</div>
-            
-            <div id="resultBox" class="hidden mt-8 p-6 bg-black rounded-xl border border-blue-900/50">
-                <h3 class="text-blue-400 text-xs font-bold uppercase mb-2">Prime Result (p=5 Hierarchy)</h3>
-                <div id="prime" class="font-mono text-xs break-all text-slate-300"></div>
-                <div id="stats" class="mt-4 text-sm text-slate-500 italic"></div>
-            </div>
-            <div id="timer" class="text-2xl font-mono font-bold text-white mb-2">0.0s</div>
+            <p id="timer" class="mt-4 text-xl font-mono text-yellow-500">Time: 0.00s</p>
         </div>
-        
-        <p class="mt-10 text-xs text-slate-500 text-center">
-            © 2024. Proprietary Algorithm. All Axioms and Filters are <b>Patent Pending</b>.
-        </p>
+
+        <div id="resultGrid" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <div class="bg-slate-800 p-6 rounded-lg border-2 border-blue-500 relative">
+                <span class="absolute -top-3 left-4 bg-blue-500 px-2 py-1 rounded text-xs font-bold">AXIOMATIC ENGINE</span>
+                <div id="axWinner" class="hidden text-green-400 font-bold mb-2">🏆 FASTEST</div>
+                <p class="text-sm text-slate-400 mb-2">Structure: k * 2^m - 1</p>
+                <div id="axTime" class="text-2xl font-mono mb-4 text-blue-300">0.0000s</div>
+                <div class="bg-black p-4 rounded text-xs font-mono break-all h-32 overflow-y-auto" id="axPrime"></div>
+            </div>
+
+            <div class="bg-slate-800 p-6 rounded-lg border-2 border-slate-600 relative">
+                <span class="absolute -top-3 left-4 bg-slate-600 px-2 py-1 rounded text-xs font-bold">TRADITIONAL (RANDOM)</span>
+                <div id="tradWinner" class="hidden text-green-400 font-bold mb-2">🏆 FASTEST</div>
+                <p class="text-sm text-slate-400 mb-2">Method: Miller-Rabin Random Search</p>
+                <div id="tradTime" class="text-2xl font-mono mb-4 text-slate-300">0.0000s</div>
+                <div class="bg-black p-4 rounded text-xs font-mono break-all h-32 overflow-y-auto" id="tradPrime"></div>
+            </div>
+
+        </div>
     </div>
 
     <script>
-    let startTime;
-    let timerInterval;
-
-    function startTimer() {
-        startTime = Date.now();
-        timerInterval = setInterval(() => {
-            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-            document.getElementById('timer').innerText = `Elapsed Time: ${elapsed}s`;
-        }, 100);
-    }
-
-    async function runTest() {
-        const digits = document.getElementById('digits').value;
-        const btn = document.getElementById('btn');
-        const loader = document.getElementById('loader');
-        const resultBox = document.getElementById('resultBox');
         // --- CONFIGURATION ---
         // We know this works because you tested it in the browser!
         const API_URL = "https://si-yo-abc-prime-generator-api.hf.space/"; 
@@ -62,34 +49,58 @@
 
         const TOKEN = partA + partB; 
         // ---------------------
+        let startTime;
+        let timerInterval;
+        
+        async function runBattle() {
+            const digits = document.getElementById('digitInput').value;
+            const btn = document.getElementById('genBtn');
+            const timerDisplay = document.getElementById('timer');
+            
+            // UI Reset
+            btn.disabled = true;
+            document.getElementById('resultGrid').classList.add('hidden');
+            document.getElementById('axWinner').classList.add('hidden');
+            document.getElementById('tradWinner').classList.add('hidden');
+            
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                timerDisplay.innerText = `Searching: ${((Date.now() - startTime) / 1000).toFixed(2)}s`;
+            }, 50);
 
-        btn.disabled = true;
-        loader.classList.remove('hidden');
-        resultBox.classList.add('hidden');
-        startTimer();
+            try {
+                const response = await fetch(`${API_URL}?digits=${digits}`, {
+                    headers: { "Authorization": `Bearer ${TOKEN}` }
+                });
 
-        try {
-            const response = await fetch(`${API_URL}?digits=${digits}`, {
-                method: "GET",
-                headers: { "Authorization": `Bearer ${TOKEN}` }
-            });
+                const data = await response.json();
+                clearInterval(timerInterval);
+                
+                // Show Results
+                document.getElementById('resultGrid').classList.remove('hidden');
+                
+                // Fill Axiomatic Data
+                document.getElementById('axTime').innerText = data.axiomatic.time;
+                document.getElementById('axPrime').innerText = `...${data.axiomatic.prime_tail} (k=${data.axiomatic.k})`;
+                
+                // Fill Traditional Data
+                document.getElementById('tradTime').innerText = data.traditional.time;
+                document.getElementById('tradPrime').innerText = `...${data.traditional.prime_tail} (Attempts: ${data.traditional.attempts})`;
 
-            if (!response.ok) throw new Error(`Server Error: ${response.status}`);
+                // Crown the Winner
+                if (data.winner === "Axiomatic") {
+                    document.getElementById('axWinner').classList.remove('hidden');
+                } else {
+                    document.getElementById('tradWinner').classList.remove('hidden');
+                }
 
-            const data = await response.json();
-            clearInterval(timerInterval);
-
-            document.getElementById('prime').innerText = data.prime;
-            document.getElementById('stats').innerText = `Success! Found ${data.digits} digits in ${data.time}`;
-            resultBox.classList.remove('hidden');
-        } catch (err) {
-            clearInterval(timerInterval);
-            alert("Connection error: " + err.message);
-        } finally {
-            btn.disabled = false;
-            loader.classList.add('hidden');
+            } catch (error) {
+                console.error("Battle failed:", error);
+                alert("The Brain didn't answer. Check the HF Space logs!");
+            } finally {
+                btn.disabled = false;
+            }
         }
-    }
-</script>
+    </script>
 </body>
 </html>
