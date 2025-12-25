@@ -36,12 +36,22 @@
     </div>
 
     <script>
+    let startTime;
+    let timerInterval;
+
+    function startTimer() {
+        startTime = Date.now();
+        timerInterval = setInterval(() => {
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            document.getElementById('timer').innerText = `Elapsed Time: ${elapsed}s`;
+        }, 100);
+    }
+
     async function runTest() {
         const digits = document.getElementById('digits').value;
         const btn = document.getElementById('btn');
         const loader = document.getElementById('loader');
         const resultBox = document.getElementById('resultBox');
-
         // --- CONFIGURATION ---
         // We know this works because you tested it in the browser!
         const API_URL = "https://si-yo-abc-prime-generator-api.hf.space/generate"; 
@@ -55,30 +65,24 @@
         btn.disabled = true;
         loader.classList.remove('hidden');
         resultBox.classList.add('hidden');
+        startTimer();
 
         try {
-            // We add the digits to the URL as a 'query parameter'
-            const finalUrl = `${API_URL}?digits=${digits}`;
-            
-            const response = await fetch(finalUrl, {
+            const response = await fetch(`${API_URL}?digits=${digits}`, {
                 method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${TOKEN}`,
-                    "Content-Type": "application/json"
-                }
+                headers: { "Authorization": `Bearer ${TOKEN}` }
             });
 
-            if (!response.ok) {
-                throw new Error(`Server responded with ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`Server Error: ${response.status}`);
 
             const data = await response.json();
+            clearInterval(timerInterval);
 
             document.getElementById('prime').innerText = data.prime;
-            document.getElementById('stats').innerText = `Found in ${data.time} | k=${data.k} | m=${data.m}`;
+            document.getElementById('stats').innerText = `Success! Found in ${data.time} | k=${data.k}`;
             resultBox.classList.remove('hidden');
         } catch (err) {
-            console.error(err);
+            clearInterval(timerInterval);
             alert("Connection error: " + err.message);
         } finally {
             btn.disabled = false;
