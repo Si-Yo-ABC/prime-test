@@ -2,45 +2,70 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Axiomatic Prime Generator | Hierarchy Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Axiomatic Prime Hierarchy Test</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-900 text-white p-10">
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-4xl font-bold mb-2">Axiomatic Prime Hierarchy</h1>
-        <p class="text-slate-400 mb-8">Deterministic generation via P=5 Hierarchy & Axiom 6 Filters.</p>
+<body class="bg-slate-900 text-white font-sans">
+    <div class="max-w-3xl mx-auto py-20 px-6">
+        <h1 class="text-4xl font-extrabold mb-4 text-blue-400">Axiomatic Prime Hierarchy</h1>
+        <p class="text-slate-400 mb-8">Proprietary Prime Generation via Primorial-Admissible Composites.</p>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
-                <h2 class="text-xl font-semibold mb-4">Configuration</h2>
-                <label class="block mb-2">Target Digits</label>
-                <input id="digits" type="number" value="200" class="w-full bg-slate-900 p-2 rounded mb-4">
-                
-                <button onclick="generatePrime()" class="w-full bg-blue-600 hover:bg-blue-500 p-3 rounded-lg font-bold transition">
-                    Run Benchmark
-                </button>
+        <div class="bg-slate-800 p-8 rounded-2xl shadow-xl border border-slate-700">
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-2">Target Digits</label>
+                <input id="digits" type="number" value="200" class="w-full bg-slate-900 border border-slate-600 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
 
-            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
-                <h2 class="text-xl font-semibold mb-4">Live Benchmark</h2>
-                <div id="status" class="text-sm text-blue-400 mb-2">Ready...</div>
-                <div id="result" class="font-mono text-xs break-all bg-black p-4 rounded h-40 overflow-y-auto">
-                    Waiting for input...
-                </div>
+            <button onclick="runTest()" id="btn" class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-lg transition-all shadow-lg active:scale-95">
+                Generate Secure Prime
+            </button>
+
+            <div id="loader" class="hidden mt-6 text-center text-blue-300 animate-pulse">Running Deterministic LLR Test...</div>
+            
+            <div id="resultBox" class="hidden mt-8 p-6 bg-black rounded-xl border border-blue-900/50">
+                <h3 class="text-blue-400 text-xs font-bold uppercase mb-2">Prime Result (p=5 Hierarchy)</h3>
+                <div id="prime" class="font-mono text-xs break-all text-slate-300"></div>
+                <div id="stats" class="mt-4 text-sm text-slate-500 italic"></div>
             </div>
         </div>
+        
+        <p class="mt-10 text-xs text-slate-500 text-center">
+            © 2024. Proprietary Algorithm. All Axioms and Filters are <b>Patent Pending</b>.
+        </p>
     </div>
 
     <script>
-        async function generatePrime() {
-            const status = document.getElementById('status');
-            const result = document.getElementById('result');
-            status.innerText = "Applying Axiom 6 Filters...";
-            
-            // This is where you would call your Python API
-            // For now, it's a placeholder for your logic
-            status.innerText = "LLR Testing (Hierarchy p=5)...";
-            // fetch('your-python-api-url')...
+        async function runTest() {
+            const digits = document.getElementById('digits').value;
+            const btn = document.getElementById('btn');
+            const loader = document.getElementById('loader');
+            const resultBox = document.getElementById('resultBox');
+
+            // --- CONFIGURATION ---
+            const API_URL = "https://si-yo-abc/prime-generator-api.hf.space/generate"; 
+            const TOKEN = "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"; 
+            // ---------------------
+
+            btn.disabled = true;
+            loader.classList.remove('hidden');
+            resultBox.classList.add('hidden');
+
+            try {
+                const response = await fetch(`${API_URL}?digits=${digits}`, {
+                    headers: { "Authorization": `Bearer ${TOKEN}` }
+                });
+                const data = await response.json();
+
+                document.getElementById('prime').innerText = data.prime;
+                document.getElementById('stats').innerText = `Found in ${data.time} | k=${data.k}`;
+                resultBox.classList.remove('hidden');
+            } catch (err) {
+                alert("Connection failed. Ensure Hugging Face Space is 'Running'.");
+            } finally {
+                btn.disabled = false;
+                loader.classList.add('hidden');
+            }
         }
     </script>
 </body>
