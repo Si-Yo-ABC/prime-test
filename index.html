@@ -36,6 +36,13 @@
                 <div class="bg-black p-4 rounded text-xs font-mono break-all h-32 overflow-y-auto" id="tradPrime"></div>
             </div>
 
+            <div id="benchmark-stats" style="margin-top: 20px; padding: 15px; border: 1px solid #444; border-radius: 8px;">
+    <h4>Axiomatic Efficiency Benchmark</h4>
+    <p>Total Candidates Scanned: <span id="total-attempts">0</span></p>
+    <p>Axiom 3 Rejections: <span id="rejections">0</span></p>
+    <p>Hit Rate: <span id="hit-rate">0%</span></p>
+</div>
+
         </div>
     </div>
 
@@ -49,6 +56,11 @@
 
         const TOKEN = partA + partB; 
         // ---------------------
+        // In your .then(data => { ... }) block:
+document.getElementById('total-attempts').innerText = data.stats.total_candidates_tested;
+document.getElementById('rejections').innerText = data.stats.hidden_factor_rejections;
+document.getElementById('hit-rate').innerText = data.stats.success_ratio;
+        
         let startTime;
         let timerInterval;
         
