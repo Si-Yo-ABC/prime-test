@@ -92,7 +92,7 @@
 
             try {
                 // 4. Fetch from your Brain
-                const response = await fetch(`${API_URL}/?digits=${digits}`, {
+                const response = await fetch(`${API_URL}?digits=${digits}`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${TOKEN}`,
