@@ -26,11 +26,11 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div class="bg-slate-900 p-4 rounded border border-slate-700">
                         <p class="text-[10px] text-blue-400 font-bold uppercase">Factor A (Primorial)</p>
-                        <p id="axA" class="text-xl font-mono truncate">0</p>
+                        <p id="axA" class="text-xl font-mono break-all">0</p>
                     </div>
                     <div class="bg-slate-900 p-4 rounded border border-slate-700">
                         <p class="text-[10px] text-blue-400 font-bold uppercase">Factor K (DNA)</p>
-                        <p id="axK" class="text-xl font-mono truncate">0</p>
+                        <p id="axK" class="text-xl font-mono break-all">0</p>
                     </div>
                     <div class="bg-slate-900 p-4 rounded border border-slate-700">
                         <p class="text-[10px] text-blue-400 font-bold uppercase">Shift (n-bits)</p>
@@ -56,6 +56,7 @@
             </div>
         </div>
     </div>
+
     <script>
         // --- CONFIGURATION ---
         // We know this works because you tested it in the browser!
@@ -65,78 +66,69 @@
         const partB = "dIhTAgaiHTPBRDcQBHnBzQHbVfttaGkQdI"; // Paste everything AFTER hf_ here
 
         const TOKEN = partA + partB; 
-        // ---------------------
-       let interval;
+        // --------------------- 
 
         async function runBattle() {
             const startTime = Date.now(); 
-    const btn = document.getElementById('genBtn');
-    const timerDisplay = document.getElementById('timerDisplay');
-    const digits = document.getElementById('digitInput').value;
-    
-    btn.disabled = true;
-    btn.innerText = "WEAVING AXIOMS...";
-    document.getElementById('resultGrid').classList.add('hidden');
-    
-    const interval = setInterval(() => {
-        timerDisplay.innerText = `Searching Hierarchy: ${((Date.now() - startTime) / 1000).toFixed(2)}s`;
-    }, 50);
+            const btn = document.getElementById('genBtn');
+            const timerDisplay = document.getElementById('timerDisplay');
+            const digits = document.getElementById('digitInput').value;
+            
+            btn.disabled = true;
+            btn.innerText = "WEAVING AXIOMS...";
+            document.getElementById('resultGrid').classList.add('hidden');
+            
+            const interval = setInterval(() => {
+                timerDisplay.innerText = `Searching Hierarchy: ${((Date.now() - startTime) / 1000).toFixed(2)}s`;
+            }, 50);
 
-    try {
-        // 1. Fetch with your Security Token
-        const response = await fetch(`${API_URL}?digits=${digits}`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${TOKEN}`,
-                'Content-Type': 'application/json'
+            try {
+                const response = await fetch(`${API_URL}?digits=${digits}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${TOKEN}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let resultData = "";
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    resultData += decoder.decode(value, { stream: true });
+                }
+
+                const cleanJson = resultData.trim();
+                if (!cleanJson.startsWith('{')) throw new Error("Search Timeout or Invalid Response");
+
+                const data = JSON.parse(cleanJson);
+                clearInterval(interval);
+
+                // UI Updates
+                document.getElementById('resultGrid').classList.remove('hidden');
+                document.getElementById('axA').innerText = data.fingerprint.A_factor;
+                document.getElementById('axK').innerText = data.fingerprint.K_factor;
+                document.getElementById('axN').innerText = data.fingerprint.Shift_n;
+                document.getElementById('axPrime').innerText = `...${data.fingerprint.Tail_30}`;
+                
+                document.getElementById('axTime').innerText = data.performance.time;
+                document.getElementById('total-attempts').innerText = data.performance.attempts;
+                document.getElementById('rejections').innerText = data.performance.rejections; // FIXED
+
+                timerDisplay.innerText = "TITAN COORDINATE CAPTURED";
+
+            } catch (err) {
+                console.error(err);
+                clearInterval(interval);
+                alert("Axiom Error: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "RUN TITAN SEARCH";
             }
-        });
-
-        // 2. Open the Stream Reader
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let resultData = "";
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            resultData += decoder.decode(value, { stream: true });
         }
-
-        // 3. SANITIZE: Trim the heartbeat spaces so JSON.parse doesn't crash
-        const cleanJson = resultData.trim();
-        
-        // Safety check: Make sure we actually got JSON and not just heartbeats
-        if (!cleanJson.startsWith('{')) {
-            throw new Error("No prime found in this sector. Try a higher salt.");
-        }
-
-        const data = JSON.parse(cleanJson);
-        
-        clearInterval(interval);
-
-        // 4. Update UI (Coordinates)
-        document.getElementById('resultGrid').classList.remove('hidden');
-        document.getElementById('axA').innerText = data.fingerprint.A_factor;
-        document.getElementById('axK').innerText = data.fingerprint.K_factor;
-        document.getElementById('axN').innerText = data.fingerprint.Shift_n;
-        document.getElementById('axPrime').innerText = `...${data.fingerprint.Tail_30}`;
-        
-        document.getElementById('axTime').innerText = data.performance.time;
-        document.getElementById('total-attempts').innerText = data.performance.attempts;
-
-        timerDisplay.innerText = "PRIME COORDINATE CAPTURED";
-
-    } catch (err) {
-        console.error("Stream Error:", err);
-        clearInterval(interval);
-        alert("Axiom Error: " + err.message);
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "RUN TITAN SEARCH";
-    }
-}
     </script>
 </body>
 </html>
-        
