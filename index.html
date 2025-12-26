@@ -70,62 +70,72 @@
 
         async function runBattle() {
             const startTime = Date.now(); 
-            const btn = document.getElementById('genBtn');
-            const timerDisplay = document.getElementById('timerDisplay');
-            const digits = document.getElementById('digitInput').value;
-            
-            btn.disabled = true;
-            btn.innerText = "WEAVING AXIOMS...";
-            document.getElementById('resultGrid').classList.add('hidden');
-            
-            interval = setInterval(() => {
-                timerDisplay.innerText = `Searching Hierarchy: ${((Date.now() - startTime) / 1000).toFixed(2)}s`;
-            }, 50);
+    const btn = document.getElementById('genBtn');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const digits = document.getElementById('digitInput').value;
+    
+    btn.disabled = true;
+    btn.innerText = "WEAVING AXIOMS...";
+    document.getElementById('resultGrid').classList.add('hidden');
+    
+    const interval = setInterval(() => {
+        timerDisplay.innerText = `Searching Hierarchy: ${((Date.now() - startTime) / 1000).toFixed(2)}s`;
+    }, 50);
 
-            try {
-                // 4. Fetch from your Brain
-                const response = await fetch(`${API_URL}?digits=${digits}`, {
+    try {
+        // 1. Fetch with your Security Token
+        const response = await fetch(`${API_URL}?digits=${digits}`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${TOKEN}`,
                 'Content-Type': 'application/json'
             }
         });
-                const data = await response.json();
-                
-                // Stop timer
-                clearInterval(interval);
-                
-                if (data.error) {
-                    alert("Status: " + data.error);
-                    timerDisplay.innerText = "Search in progress on server...";
-                    return;
-                }
 
-                // Show Results
-                document.getElementById('resultGrid').classList.remove('hidden');
-                
-                // Map the new "Fingerprint" JSON structure
-                document.getElementById('axA').innerText = data.fingerprint.A_factor;
-                document.getElementById('axK').innerText = data.fingerprint.K_factor;
-                document.getElementById('axN').innerText = data.fingerprint.Shift_n;
-                document.getElementById('axPrime').innerText = `...${data.fingerprint.Tail_30}`;
-                
-                document.getElementById('axTime').innerText = data.performance.time;
-                document.getElementById('rejections').innerText = data.performance.rejections;
-                document.getElementById('total-attempts').innerText = data.performance.attempts;
+        // 2. Open the Stream Reader
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let resultData = "";
 
-                timerDisplay.innerText = "PRIME COORDINATE CAPTURED";
-
-            } catch (err) {
-                console.error("Connection Failed:", err);
-                alert("Connection failed. Check your API logs.");
-            } finally {
-                clearInterval(interval);
-                btn.disabled = false;
-                btn.innerText = "RUN TITAN SEARCH";
-            }
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            resultData += decoder.decode(value, { stream: true });
         }
+
+        // 3. SANITIZE: Trim the heartbeat spaces so JSON.parse doesn't crash
+        const cleanJson = resultData.trim();
+        
+        // Safety check: Make sure we actually got JSON and not just heartbeats
+        if (!cleanJson.startsWith('{')) {
+            throw new Error("No prime found in this sector. Try a higher salt.");
+        }
+
+        const data = JSON.parse(cleanJson);
+        
+        clearInterval(interval);
+
+        // 4. Update UI (Coordinates)
+        document.getElementById('resultGrid').classList.remove('hidden');
+        document.getElementById('axA').innerText = data.fingerprint.A_factor;
+        document.getElementById('axK').innerText = data.fingerprint.K_factor;
+        document.getElementById('axN').innerText = data.fingerprint.Shift_n;
+        document.getElementById('axPrime').innerText = `...${data.fingerprint.Tail_30}`;
+        
+        document.getElementById('axTime').innerText = data.performance.time;
+        document.getElementById('total-attempts').innerText = data.performance.attempts;
+
+        timerDisplay.innerText = "PRIME COORDINATE CAPTURED";
+
+    } catch (err) {
+        console.error("Stream Error:", err);
+        clearInterval(interval);
+        alert("Axiom Error: " + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "RUN TITAN SEARCH";
+    }
+}
     </script>
 </body>
 </html>
