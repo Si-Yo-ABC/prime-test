@@ -6,13 +6,14 @@
     <title>Axiomatic Prime Hierarchy Test</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-    <body class="bg-slate-900 text-white font-sans min-h-screen p-8">
+<body class="bg-slate-900 text-white font-sans min-h-screen p-8">
     <div class="max-w-4xl mx-auto">
         <h1 class="text-3xl font-bold text-center mb-8 text-blue-400">Prime Generation Battle: Axiomatic vs Traditional</h1>
 
         <div class="bg-slate-800 p-6 rounded-lg shadow-xl mb-8 flex flex-col items-center">
-            <input type="number" id="digitInput" value="10000" class="bg-slate-700 text-white px-4 py-2 rounded mb-4 w-32 text-center text-xl">
-            <button onclick="runBattle()" id="genBtn" class="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-full font-bold transition-all transform hover:scale-105">
+            <label class="mb-2 text-slate-400">Enter Number of Digits</label>
+            <input type="number" id="digitInput" value="10000" class="bg-slate-700 text-white px-4 py-2 rounded mb-4 w-48 text-center text-xl border border-slate-500">
+            <button onclick="runBattle()" id="genBtn" class="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-full font-bold transition-all transform hover:scale-105 active:scale-95">
                 START BENCHMARK
             </button>
             <p id="timer" class="mt-4 text-xl font-mono text-yellow-500">Time: 0.00s</p>
@@ -25,27 +26,36 @@
                 <div id="axWinner" class="hidden text-green-400 font-bold mb-2">🏆 FASTEST</div>
                 <p class="text-sm text-slate-400 mb-2">Structure: k * 2^m - 1</p>
                 <div id="axTime" class="text-2xl font-mono mb-4 text-blue-300">0.0000s</div>
-                <div class="bg-black p-4 rounded text-xs font-mono break-all h-32 overflow-y-auto" id="axPrime"></div>
+                <div class="bg-black p-4 rounded text-xs font-mono break-all h-32 overflow-y-auto mb-4" id="axPrime"></div>
+                
+                <div class="bg-slate-900/50 p-4 rounded border border-slate-700">
+                    <h4 class="text-blue-400 text-xs font-bold uppercase mb-2">Efficiency Benchmark</h4>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-slate-500">Candidates Scanned:</span>
+                        <span id="total-attempts" class="text-white font-mono">0</span>
+                    </div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-slate-500">Axiom 3 Rejections:</span>
+                        <span id="rejections" class="text-red-400 font-mono">0</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-500">Hit Rate:</span>
+                        <span id="hit-rate" class="text-green-400 font-mono">0%</span>
+                    </div>
+                </div>
             </div>
 
             <div class="bg-slate-800 p-6 rounded-lg border-2 border-slate-600 relative">
                 <span class="absolute -top-3 left-4 bg-slate-600 px-2 py-1 rounded text-xs font-bold">TRADITIONAL (RANDOM)</span>
                 <div id="tradWinner" class="hidden text-green-400 font-bold mb-2">🏆 FASTEST</div>
-                <p class="text-sm text-slate-400 mb-2">Method: Miller-Rabin Random Search</p>
+                <p class="text-sm text-slate-400 mb-2">Method: Random Miller-Rabin Search</p>
                 <div id="tradTime" class="text-2xl font-mono mb-4 text-slate-300">0.0000s</div>
                 <div class="bg-black p-4 rounded text-xs font-mono break-all h-32 overflow-y-auto" id="tradPrime"></div>
+                <p class="text-[10px] text-slate-500 mt-4 italic">Traditional methods often timeout above 5,000 digits.</p>
             </div>
-
-            <div id="benchmark-stats" style="margin-top: 20px; padding: 15px; border: 1px solid #444; border-radius: 8px;">
-    <h4>Axiomatic Efficiency Benchmark</h4>
-    <p>Total Candidates Scanned: <span id="total-attempts">0</span></p>
-    <p>Axiom 3 Rejections: <span id="rejections">0</span></p>
-    <p>Hit Rate: <span id="hit-rate">0%</span></p>
-</div>
 
         </div>
     </div>
-
     <script>
         // --- CONFIGURATION ---
         // We know this works because you tested it in the browser!
@@ -56,32 +66,8 @@
 
         const TOKEN = partA + partB; 
         // ---------------------
-        // In your .then(data => { ... }) block:
-document.getElementById('total-attempts').innerText = data.stats.total_candidates_tested;
-document.getElementById('rejections').innerText = data.stats.hidden_factor_rejections;
-document.getElementById('hit-rate').innerText = data.stats.success_ratio;
-
-        fetch(`https://YOUR-SPACE-URL.hf.space/?digits=${digits}`)
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            console.error(data.error);
-        } else {
-            // Updating the UI with the core results
-            document.getElementById('prime-result').innerText = data.prime_tail;
-            document.getElementById('k-val').innerText = data.k_value;
-            document.getElementById('time-val').innerText = data.time;
-            
-            // Updating the Benchmark Stats
-            document.getElementById('total-attempts').innerText = data.stats.attempts;
-            document.getElementById('rejections').innerText = data.stats.rejections;
-            document.getElementById('hit-rate').innerText = data.stats.hit_rate;
-        }
-    });
-        
-        let startTime;
         let timerInterval;
-        
+
         async function runBattle() {
             const digits = document.getElementById('digitInput').value;
             const btn = document.getElementById('genBtn');
@@ -89,36 +75,52 @@ document.getElementById('hit-rate').innerText = data.stats.success_ratio;
             
             // UI Reset
             btn.disabled = true;
+            btn.innerText = "PROCESSING...";
             document.getElementById('resultGrid').classList.add('hidden');
             document.getElementById('axWinner').classList.add('hidden');
             document.getElementById('tradWinner').classList.add('hidden');
             
-            startTime = Date.now();
+            const startTime = Date.now();
             timerInterval = setInterval(() => {
                 timerDisplay.innerText = `Searching: ${((Date.now() - startTime) / 1000).toFixed(2)}s`;
             }, 50);
 
             try {
-                const response = await fetch(`${API_URL}?digits=${digits}`, {
-                    headers: { "Authorization": `Bearer ${TOKEN}` }
-                });
-
+                // Fetch from the API
+                const response = await fetch(`${API_URL}?digits=${digits}`);
                 const data = await response.json();
+                
                 clearInterval(timerInterval);
                 
-                // Show Results
+                if (data.error || data.status === "Error") {
+                    alert("Error from Brain: " + (data.error || data.message));
+                    return;
+                }
+
+                // Show Results Grid
                 document.getElementById('resultGrid').classList.remove('hidden');
                 
-                // Fill Axiomatic Data
+                // 1. Fill Axiomatic Data
                 document.getElementById('axTime').innerText = data.axiomatic.time;
-                document.getElementById('axPrime').innerText = `...${data.axiomatic.prime_tail} (k=${data.axiomatic.k})`;
+                document.getElementById('axPrime').innerText = `Tail: ...${data.axiomatic.prime_tail}\n\nK-Factor: ${data.axiomatic.k}`;
                 
-                // Fill Traditional Data
+                // 2. Fill Axiomatic Benchmark Stats
+                if (data.axiomatic.stats) {
+                    document.getElementById('total-attempts').innerText = data.axiomatic.stats.attempts;
+                    document.getElementById('rejections').innerText = data.axiomatic.stats.rejections;
+                    document.getElementById('hit-rate').innerText = data.axiomatic.stats.hit_rate;
+                }
+                
+                // 3. Fill Traditional Data
                 document.getElementById('tradTime').innerText = data.traditional.time;
-                document.getElementById('tradPrime').innerText = `...${data.traditional.prime_tail} (Attempts: ${data.traditional.attempts})`;
+                if (data.traditional.status === "Skipped") {
+                    document.getElementById('tradPrime').innerText = "SKIPPED: Scale too large for traditional search.";
+                } else {
+                    document.getElementById('tradPrime').innerText = `Tail: ...${data.traditional.prime_tail}`;
+                }
 
-                // Crown the Winner
-                if (data.winner === "Axiomatic") {
+                // 4. Crown the Winner
+                if (data.winner.includes("Axiomatic")) {
                     document.getElementById('axWinner').classList.remove('hidden');
                 } else {
                     document.getElementById('tradWinner').classList.remove('hidden');
@@ -126,9 +128,11 @@ document.getElementById('hit-rate').innerText = data.stats.success_ratio;
 
             } catch (error) {
                 console.error("Battle failed:", error);
-                alert("The Brain didn't answer. Check the HF Space logs!");
+                alert("The Brain didn't answer. Is the Space running?");
             } finally {
+                clearInterval(timerInterval);
                 btn.disabled = false;
+                btn.innerText = "START BENCHMARK";
             }
         }
     </script>
