@@ -1,63 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Axiomatic Prime Fingerprint Engine</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Axiom Tournament: The Horse Race</title>
+    <style>
+        body { background: #0f0f0f; color: #00ff00; font-family: monospace; padding: 20px; }
+        .horse-card { border: 1px solid #333; margin: 10px 0; padding: 15px; border-radius: 5px; }
+        .bar-container { background: #222; width: 100%; height: 20px; margin-top: 5px; }
+        .bar { background: #00ff00; height: 100%; width: 0%; transition: 0.3s; }
+        .stats { display: flex; justify-content: space-between; font-size: 0.9em; }
+        h1 { border-bottom: 2px solid #00ff00; padding-bottom: 10px; }
+    </style>
 </head>
-<body class="bg-slate-900 text-white font-sans min-h-screen p-8">
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl font-bold text-center mb-8 text-blue-400">Axiomatic Prime Fingerprint Engine</h1>
-
-        <div class="bg-slate-800 p-6 rounded-lg shadow-xl mb-8 flex flex-col items-center">
-            <label class="mb-2 text-slate-400 font-bold uppercase text-xs tracking-widest">Target Digits</label>
-            <input type="number" id="digitInput" value="10000" class="bg-slate-700 text-white px-4 py-2 rounded mb-4 w-48 text-center text-xl border border-slate-500">
-            <button onclick="runBattle()" id="genBtn" class="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-full font-bold transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-blue-900/50">
-                RUN TITAN SEARCH
-            </button>
-            <p id="timerDisplay" class="mt-4 text-xl font-mono text-yellow-500">Ready</p>
-        </div>
-
-        <div id="resultGrid" class="hidden">
-            <div class="bg-slate-800 p-8 rounded-lg border-2 border-blue-500 relative shadow-2xl">
-                <span class="absolute -top-3 left-4 bg-blue-500 px-3 py-1 rounded text-xs font-bold uppercase tracking-tighter">Prime Coordinate Found</span>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div class="bg-slate-900 p-4 rounded border border-slate-700">
-                        <p class="text-[10px] text-blue-400 font-bold uppercase">Factor A (Primorial)</p>
-                        <p id="axA" class="text-xl font-mono break-all">0</p>
-                    </div>
-                    <div class="bg-slate-900 p-4 rounded border border-slate-700">
-                        <p class="text-[10px] text-blue-400 font-bold uppercase">Factor K (DNA)</p>
-                        <p id="axK" class="text-xl font-mono break-all">0</p>
-                    </div>
-                    <div class="bg-slate-900 p-4 rounded border border-slate-700">
-                        <p class="text-[10px] text-blue-400 font-bold uppercase">Shift (n-bits)</p>
-                        <p id="axN" class="text-xl font-mono">0</p>
-                    </div>
-                </div>
-
-                <div class="mb-6">
-                    <p class="text-[10px] text-slate-500 font-bold uppercase mb-2">Resulting Prime Tail (30 Digits)</p>
-                    <div class="bg-black p-4 rounded text-green-400 font-mono break-all border border-slate-700 text-center text-lg" id="axPrime"></div>
-                </div>
-
-                <div class="bg-slate-900/80 p-4 rounded border border-slate-700 flex justify-between items-center">
-                    <div>
-                        <h4 class="text-blue-400 text-[10px] font-bold uppercase tracking-tighter">Performance Log</h4>
-                        <p class="text-xs text-slate-500">Search Time: <span id="axTime" class="text-white">0s</span></p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-xs text-slate-500">Rejections (Axiom 3): <span id="rejections" class="text-red-400">0</span></p>
-                        <p class="text-xs text-slate-500">Total Attempts: <span id="total-attempts" class="text-white">0</span></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<body>
+    <h1>AXIOM FORMULA TOURNAMENT (4-300 DIGITS)</h1>
+    <div id="display"></div>
 
     <script>
+        
         // --- CONFIGURATION ---
         // We know this works because you tested it in the browser!
         const API_URL = "https://si-yo-abc-prime-generator-api.hf.space/"; 
@@ -68,67 +27,56 @@
         const TOKEN = partA + partB; 
         // --------------------- 
 
-        async function runBattle() {
-            const startTime = Date.now(); 
-            const btn = document.getElementById('genBtn');
-            const timerDisplay = document.getElementById('timerDisplay');
-            const digits = document.getElementById('digitInput').value;
-            
-            btn.disabled = true;
-            btn.innerText = "WEAVING AXIOMS...";
-            document.getElementById('resultGrid').classList.add('hidden');
-            
-            const interval = setInterval(() => {
-                timerDisplay.innerText = `Searching Hierarchy: ${((Date.now() - startTime) / 1000).toFixed(2)}s`;
-            }, 50);
-
-            try {
-                const response = await fetch(`${API_URL}?digits=${digits}`, {
+        async function startRace() {
+            const response = await fetch(`${API_URL}?digits=${digits}`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${TOKEN}`,
                         'Content-Type': 'application/json'
                     }
                 });
+            
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
 
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let resultData = "";
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    resultData += decoder.decode(value, { stream: true });
-                }
-
-                const cleanJson = resultData.trim();
-                if (!cleanJson.startsWith('{')) throw new Error("Search Timeout or Invalid Response");
-
-                const data = JSON.parse(cleanJson);
-                clearInterval(interval);
-
-                // UI Updates
-                document.getElementById('resultGrid').classList.remove('hidden');
-                document.getElementById('axA').innerText = data.fingerprint.A_factor;
-                document.getElementById('axK').innerText = data.fingerprint.K_factor;
-                document.getElementById('axN').innerText = data.fingerprint.Shift_n;
-                document.getElementById('axPrime').innerText = `...${data.fingerprint.Tail_30}`;
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
                 
-                document.getElementById('axTime').innerText = data.performance.time;
-                document.getElementById('total-attempts').innerText = data.performance.attempts;
-                document.getElementById('rejections').innerText = data.performance.rejections; // FIXED
-
-                timerDisplay.innerText = "TITAN COORDINATE CAPTURED";
-
-            } catch (err) {
-                console.error(err);
-                clearInterval(interval);
-                alert("Axiom Error: " + err.message);
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "RUN TITAN SEARCH";
+                const lines = decoder.decode(value).split('\n');
+                lines.forEach(line => {
+                    if (!line.trim()) return;
+                    const stats = JSON.parse(line);
+                    updateUI(stats);
+                });
             }
         }
+
+        function updateUI(stats) {
+            const container = document.getElementById('display');
+            container.innerHTML = '';
+            
+            for (const [horse, data] of Object.entries(stats)) {
+                const fertility = ((data.primes / data.attempts) * 100).toFixed(2);
+                const friction = ((data.rejections / data.attempts) * 100).toFixed(1);
+                
+                container.innerHTML += `
+                    <div class="horse-card">
+                        <div class="stats">
+                            <span>HORSE: <b>${horse}</b></span>
+                            <span>PRIMES: ${data.primes}</span>
+                            <span>FERTILITY: ${fertility}%</span>
+                            <span>FRICTION: ${friction}%</span>
+                        </div>
+                        <div class="bar-container">
+                            <div class="bar" style="width: ${fertility * 10}%"></div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        startRace();
     </script>
 </body>
 </html>
