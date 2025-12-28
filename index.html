@@ -1,22 +1,32 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Axiom Tournament: The Horse Race</title>
+    <title>Unit-Prime Axiom Database</title>
     <style>
-        body { background: #0f0f0f; color: #00ff00; font-family: monospace; padding: 20px; }
-        .horse-card { border: 1px solid #333; margin: 10px 0; padding: 15px; border-radius: 5px; }
-        .bar-container { background: #222; width: 100%; height: 20px; margin-top: 5px; }
-        .bar { background: #00ff00; height: 100%; width: 0%; transition: 0.3s; }
-        .stats { display: flex; justify-content: space-between; font-size: 0.9em; }
-        h1 { border-bottom: 2px solid #00ff00; padding-bottom: 10px; }
+        body { font-family: 'Courier New', monospace; background: #0a0a0a; color: #00ff41; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .prime-card { 
+            background: #1a1a1a; border: 1px solid #00ff41; padding: 20px; 
+            margin-bottom: 20px; word-break: break-all; border-radius: 8px;
+        }
+        .label { color: #ff8c00; font-weight: bold; }
+        .value { color: #ffffff; }
+        .dna-tag { display: inline-block; background: #004400; padding: 5px 10px; margin-top: 10px; border-radius: 4px; }
+        h1 { text-align: center; color: #ff8c00; }
+        button { 
+            background: #ff8c00; border: none; padding: 10px 20px; 
+            color: black; font-weight: bold; cursor: pointer; width: 100%; font-size: 1.1em;
+        }
     </style>
 </head>
 <body>
-    <h1>AXIOM FORMULA TOURNAMENT (4-300 DIGITS)</h1>
-    <div id="display"></div>
+    <div class="container">
+        <h1>Axiom Prime Generator (Phase 4)</h1>
+        <button onclick="generatePrime()">CONSTRUCT 500-DIGIT AXIOM PRIME</button>
+        <div id="results"></div>
+    </div>
 
     <script>
-        
         // --- CONFIGURATION ---
         // We know this works because you tested it in the browser!
         const API_URL = "https://si-yo-abc-prime-generator-api.hf.space/"; 
@@ -25,9 +35,11 @@
         const partB = "dIhTAgaiHTPBRDcQBHnBzQHbVfttaGkQdI"; // Paste everything AFTER hf_ here
 
         const TOKEN = partA + partB; 
-        // --------------------- 
-
-        async function startRace() {
+        // ---------------------
+        async function generatePrime() {
+            const resDiv = document.getElementById('results');
+            resDiv.innerHTML = "<p>Constructing Prime via Axiom $2^n \cdot 3^n \cdot o$...</p>";
+            
             const response = await fetch(`${API_URL}`, {
                     method: 'GET',
                     headers: {
@@ -35,48 +47,19 @@
                         'Content-Type': 'application/json'
                     }
                 });
+            const data = await response.json();
             
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                
-                const lines = decoder.decode(value).split('\n');
-                lines.forEach(line => {
-                    if (!line.trim()) return;
-                    const stats = JSON.parse(line);
-                    updateUI(stats);
-                });
-            }
+            resDiv.innerHTML = `
+                <div class="prime-card">
+                    <div><span class="label">DATABASE ID:</span> <span class="value">${data.id}</span></div>
+                    <div class="dna-tag">DNA: ${data.dna}</div>
+                    <p><span class="label">BASE:</span> ${data.base_info}</p>
+                    <p><span class="label">OFFSET:</span> ${data.offset}</p>
+                    <p><span class="label">PRIME (500 DIGITS):</span></p>
+                    <div class="value" style="font-size: 0.9em;">${data.prime}</div>
+                </div>
+            `;
         }
-
-        function updateUI(stats) {
-            const container = document.getElementById('display');
-            container.innerHTML = '';
-            
-            for (const [horse, data] of Object.entries(stats)) {
-                const fertility = ((data.primes / data.attempts) * 100).toFixed(2);
-                const friction = ((data.rejections / data.attempts) * 100).toFixed(1);
-                
-                container.innerHTML += `
-                    <div class="horse-card">
-                        <div class="stats">
-                            <span>HORSE: <b>${horse}</b></span>
-                            <span>PRIMES: ${data.primes}</span>
-                            <span>FERTILITY: ${fertility}%</span>
-                            <span>FRICTION: ${friction}%</span>
-                        </div>
-                        <div class="bar-container">
-                            <div class="bar" style="width: ${fertility * 10}%"></div>
-                        </div>
-                    </div>
-                `;
-            }
-        }
-
-        startRace();
     </script>
 </body>
 </html>
