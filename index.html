@@ -10,6 +10,11 @@
 </head>
 <body>
     <h1>The Succession of the Spark</h1>
+    <div style="text-align: center; margin: 20px 0;">
+        <button id="next-btn" onclick="huntNext()" style="padding: 15px 30px; background: #ff8c00; color: #000; font-weight: bold; cursor: pointer; border: none; border-radius: 5px; display: none;">
+            🔥 HUNT NEXT PRIME
+        </button>
+    </div>
     <div id="leaderboard"></div>
     <div style="display: flex; gap: 20px; margin-top: 20px;">
         <div style="flex: 1; border: 1px solid #00ff00; border-radius: 5px; background: #000;">
@@ -43,6 +48,7 @@
 
         const TOKEN = partA + partB; 
         // ---------------------
+        let currentLeader = "1"; // Global tracker
 
         async function refreshDisplay() {
     const res = await fetch(`https://si-yo-abc-prime-generator-api.hf.space/view_dna`);
@@ -57,10 +63,15 @@
     sBody.innerHTML = data.shifts.map(s => `<tr><td>${s[0]}</td><td>${s[1]}</td></tr>`).join('');
 }
 
-        async function ignite() {
+        async function huntNext() {
+    // Hide the button so you don't double-click while it's thinking
+    document.getElementById('next-btn').style.display = "none";
+    await ignite(currentLeader);
+}
+
+async function ignite(p = "1") {
     const display = document.getElementById('leaderboard');
-    // STARTING FROM SCRATCH: Only 1 and 2
-    const p = "1"; 
+    display.innerHTML = `<h2 style="color: #ff8c00">Dragon is hunting from ${p}...</h2>`;
 
     try {
         const response = await fetch(`${API_URL}?p=${p}`, {
@@ -70,22 +81,26 @@
         const data = await response.json();
 
         if (data.leader) {
+            currentLeader = data.leader; // Feed the global tracker
             const purityColor = data.pure_prime ? "#00ff41" : "#ff0000";
-            const purityText = data.pure_prime ? "100% PURE PRIME" : "COMPOSITE DETECTED (FIX METHOD)";
-
+            
             display.innerHTML = `
                 <div class="prime-card" style="border-color: ${purityColor}">
-                    <h2 style="color: ${purityColor}">${purityText}</h2>
-                    <p><strong>LEADER:</strong> <span class="value">${data.leader}</span></p>
+                    <h2 style="color: ${purityColor}">100% PURE PRIME FOUND</h2>
+                    <p><strong>LEADER:</strong> <span class="value" id="current-p">${data.leader}</span></p>
                     <hr>
                     <p><strong>LANDING GEAR SHIFTS:</strong> ${data.landings}</p>
                     <p><strong>HUNT TIME:</strong> ${data.time}s</p>
                 </div>`;
+            
+            // Show the "Next" button for the next jump
+            document.getElementById('next-btn').style.display = "inline-block";
         }
 
         refreshDisplay();
     } catch (err) {
         display.innerHTML = `<p style="color:red">Engine Stall: ${err.message}</p>`;
+        document.getElementById('next-btn').style.display = "inline-block";
     }
 }
         // ACTUALLY RUN THE FUNCTION
