@@ -34,43 +34,61 @@
         const TOKEN = partA + partB; 
         // ---------------------
        async function loadDragonData() {
-    try {
-        // 1. Fetch from Hugging Face Engine
-        const apiResponse = await fetch(`${API_URL}?p=113&known_shifts=3,5,7`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${TOKEN}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        const result = await apiResponse.json();
-        console.log("New Leader Found:", result);
-
-        // 2. Load the SQLite DB from GitHub
-        const dbResponse = await fetch('shifts.db');
-        const buf = await dbResponse.arrayBuffer();
-        
-        // Initialize SQL.js
-        const SQL = await initSqlJs({ 
-            locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.6.2/${file}` 
-        });
-        
-        const db = new SQL.Database(new Uint8Array(buf));
-        const contents = db.exec("SELECT * FROM primes ORDER BY id DESC LIMIT 30");
-        
-        // Build the Display (Simplified)
-        if (contents.length > 0) {
-            let html = "<ul>";
-            contents[0].values.forEach(row => {
-                html += `<li>Leader: ${row[1]} (Offset: ${row[2]})</li>`;
+        try {
+            console.log("Igniting the Spark...");
+            
+            // 1. Call the Engine
+            const apiResponse = await fetch(`${API_URL}?p=113&known_shifts=3,5,7`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${TOKEN}`,
+                    'Content-Type': 'application/json'
+                }
             });
-            html += "</ul>";
-            document.getElementById('leaderboard').innerHTML = html;
+
+            if (!apiResponse.ok) {
+                throw new Error(`Engine Error: ${apiResponse.status}`);
+            }
+
+            const dragonResult = await apiResponse.json();
+            console.log("New Leader Born:", dragonResult);
+
+            // 2. Fetch the Database from your GitHub
+            console.log("Reading History from shifts.db...");
+            const dbResponse = await fetch('shifts.db');
+            const buf = await dbResponse.arrayBuffer();
+            
+            // Initialize SQL.js (This might take a second)
+            const SQL = await initSqlJs({ 
+                locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.6.2/${file}` 
+            });
+            
+            const db = new SQL.Database(new Uint8Array(buf));
+            const contents = db.exec("SELECT * FROM primes ORDER BY id DESC LIMIT 30");
+            
+            // 3. Display the results
+            let displayHtml = "";
+            if (contents.length > 0) {
+                contents[0].values.forEach(row => {
+                    displayHtml += `
+                        <div class="prime-card">
+                            <span class="label">LEADER:</span> <span class="value">${row[1]}</span><br>
+                            <span class="label">OFFSET:</span> <span class="value">${row[2]}</span>
+                        </div>`;
+                });
+            } else {
+                displayHtml = "<p>History is empty. Finding the first Leader...</p>";
+            }
+            document.getElementById('leaderboard').innerHTML = displayHtml;
+
+        } catch (err) {
+            console.error("Dragon Error:", err);
+            document.getElementById('leaderboard').innerHTML = `<p style="color:red">Error: ${err.message}</p>`;
         }
-    } catch (err) {
-        console.error("Dragon Error:", err);
     }
-}
+
+    // Start the process
+    loadDragonData();
     </script>
 </body>
 </html>
