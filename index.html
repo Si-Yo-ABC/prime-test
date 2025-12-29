@@ -18,6 +18,7 @@
             color: black; font-weight: bold; cursor: pointer; width: 100%; font-size: 1.1em;
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.6.2/sql-wasm.js"></script>
 </head>
 <body>
     <h1>The Succession of the Spark</h1>
@@ -33,62 +34,41 @@
 
         const TOKEN = partA + partB; 
         // ---------------------
-       async function loadDragonData() {
+       async function runTest() {
+        const board = document.getElementById('leaderboard');
         try {
-            console.log("Igniting the Spark...");
-            
-            // 1. Call the Engine
-            const apiResponse = await fetch(`${API_URL}?p=113&known_shifts=3,5,7`, {
+            board.innerHTML = "🐉 The Dragon is hunting 30-digit primes...";
+
+            // Use a 30-digit starting point
+            const p = "1000000000000000000000000000033";
+            const shifts = "3,7,11,13,17,19,23";
+
+            const apiResponse = await fetch(`${API_URL}?p=${p}&known_shifts=${shifts}`, {
                 method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${TOKEN}`,
-                    'Content-Type': 'application/json'
-                }
+                headers: { 'Authorization': `Bearer ${TOKEN}` }
             });
 
-            if (!apiResponse.ok) {
-                throw new Error(`Engine Error: ${apiResponse.status}`);
-            }
-
-            const dragonResult = await apiResponse.json();
-            console.log("New Leader Born:", dragonResult);
-
-            // 2. Fetch the Database from your GitHub
-            console.log("Reading History from shifts.db...");
-            const dbResponse = await fetch('shifts.db');
-            const buf = await dbResponse.arrayBuffer();
+            const result = await apiResponse.json();
             
-            // Initialize SQL.js (This might take a second)
-            const SQL = await initSqlJs({ 
-                locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.6.2/${file}` 
-            });
-            
-            const db = new SQL.Database(new Uint8Array(buf));
-            const contents = db.exec("SELECT * FROM primes ORDER BY id DESC LIMIT 30");
-            
-            // 3. Display the results
-            let displayHtml = "";
-            if (contents.length > 0) {
-                contents[0].values.forEach(row => {
-                    displayHtml += `
-                        <div class="prime-card">
-                            <span class="label">LEADER:</span> <span class="value">${row[1]}</span><br>
-                            <span class="label">OFFSET:</span> <span class="value">${row[2]}</span>
-                        </div>`;
-                });
+            if (result.leader) {
+                board.innerHTML = `
+                    <div class="prime-card">
+                        <h2 style="color:#ff8c00">Success!</h2>
+                        <span class="label">NEW LEADER:</span> <span class="value">${result.leader}</span><br>
+                        <span class="label">JUMP OFFSET:</span> <span class="value">${result.offset}</span><br>
+                        <p style="font-size: 0.8em; color: gray;">Calculated in ${result.time_seconds}s</p>
+                    </div>`;
             } else {
-                displayHtml = "<p>History is empty. Finding the first Leader...</p>";
+                board.innerHTML = `<p style="color:red">Engine Error: ${JSON.stringify(result)}</p>`;
             }
-            document.getElementById('leaderboard').innerHTML = displayHtml;
 
         } catch (err) {
-            console.error("Dragon Error:", err);
-            document.getElementById('leaderboard').innerHTML = `<p style="color:red">Error: ${err.message}</p>`;
+            board.innerHTML = `<p style="color:red">Connection Error: ${err.message}</p>`;
         }
     }
 
-    // Start the process
-    loadDragonData();
+    // Run the test when the page loads
+    window.onload = runTest;
     </script>
 </body>
 </html>
