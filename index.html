@@ -10,7 +10,27 @@
 </head>
 <body>
     <h1>The Succession of the Spark</h1>
-    <div id="leaderboard">Attempting to ignite the engine...</div>
+    <div style="display: flex; gap: 20px; margin-top: 20px;">
+    <div style="flex: 1; border: 1px solid #00ff00; border-radius: 5px; background: #000;">
+        <h4 style="text-align: center; color: #00ff00;">💎 FOUND LEADERS</h4>
+        <div id="prime-scroll" style="height: 200px; overflow-y: auto; padding: 10px; font-size: 0.9em;">
+            <table style="width: 100%; color: #00ff00;">
+                <thead><tr><th>Value</th><th>Time (s)</th></tr></thead>
+                <tbody id="prime-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div style="flex: 1; border: 1px solid #00ff00; border-radius: 5px; background: #000;">
+        <h4 style="text-align: center; color: #00ff00;">🛡️ DNA MARKERS (SHIFTS)</h4>
+        <div id="shift-scroll" style="height: 200px; overflow-y: auto; padding: 10px; font-size: 0.9em;">
+            <table style="width: 100%; color: #00ff00;">
+                <thead><tr><th>Marker (x²)</th><th>Parent (x)</th></tr></thead>
+                <tbody id="shift-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
     <script>
         // --- CONFIGURATION ---
@@ -22,6 +42,19 @@
 
         const TOKEN = partA + partB; 
         // ---------------------
+
+        async function refreshDisplay() {
+    const res = await fetch(`${API_URL}/view_dna`);
+    const data = await res.json();
+    
+    // Update Primes Table
+    const pBody = document.getElementById('prime-body');
+    pBody.innerHTML = data.primes.map(p => `<tr><td>${p[0]}</td><td>${p[1]}</td></tr>`).join('');
+    
+    // Update Shifts Table
+    const sBody = document.getElementById('shift-body');
+    sBody.innerHTML = data.shifts.map(s => `<tr><td>${s[0]}</td><td>${s[1]}</td></tr>`).join('');
+}
 
         async function ignite() {
     const display = document.getElementById('leaderboard');
@@ -48,6 +81,8 @@
                     <p><strong>HUNT TIME:</strong> ${data.time}s</p>
                 </div>`;
         }
+
+        refreshDisplay();
     } catch (err) {
         display.innerHTML = `<p style="color:red">Engine Stall: ${err.message}</p>`;
     }
