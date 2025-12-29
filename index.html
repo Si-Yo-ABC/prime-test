@@ -1,28 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Unit-Prime Axiom Database</title>
+    <title>Dragon Engine Test</title>
     <style>
-        body { font-family: 'Courier New', monospace; background: #0a0a0a; color: #00ff41; padding: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        .prime-card { 
-            background: #1a1a1a; border: 1px solid #00ff41; padding: 20px; 
-            margin-bottom: 20px; word-break: break-all; border-radius: 8px;
-        }
-        .label { color: #ff8c00; font-weight: bold; }
-        .value { color: #ffffff; }
-        .dna-tag { display: inline-block; background: #004400; padding: 5px 10px; margin-top: 10px; border-radius: 4px; }
-        h1 { text-align: center; color: #ff8c00; }
-        button { 
-            background: #ff8c00; border: none; padding: 10px 20px; 
-            color: black; font-weight: bold; cursor: pointer; width: 100%; font-size: 1.1em;
-        }
+        body { background: #0a0a0a; color: #00ff41; font-family: monospace; padding: 20px; }
+        .prime-card { border: 1px solid #ff8c00; padding: 20px; border-radius: 10px; background: #111; }
+        .value { color: white; word-break: break-all; font-size: 1.2em; }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.6.2/sql-wasm.js"></script>
 </head>
 <body>
     <h1>The Succession of the Spark</h1>
-    <div id="leaderboard">Loading the Dragon's History...</div>
+    <div id="leaderboard">Attempting to ignite the engine...</div>
 
     <script>
         // --- CONFIGURATION ---
@@ -34,41 +22,42 @@
 
         const TOKEN = partA + partB; 
         // ---------------------
-       async function runTest() {
-        const board = document.getElementById('leaderboard');
-        try {
-            board.innerHTML = "🐉 The Dragon is hunting 30-digit primes...";
 
-            // Use a 30-digit starting point
-            const p = "1000000000000000000000000000033";
-            const shifts = "3,7,11,13,17,19,23";
+        async function ignite() {
+            const display = document.getElementById('leaderboard');
+            try {
+                // Testing with a 30-digit prime candidate
+                const p = "1000000000000000000000000000033";
+                const shifts = "3,5,7,11,13";
 
-            const apiResponse = await fetch(`${API_URL}?p=${p}&known_shifts=${shifts}`, {
-                method: 'GET',
-                headers: { 'Authorization': `Bearer ${TOKEN}` }
-            });
+                console.log("Calling Hugging Face...");
+                const response = await fetch(`${API_URL}?p=${p}&known_shifts=${shifts}`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
 
-            const result = await apiResponse.json();
-            
-            if (result.leader) {
-                board.innerHTML = `
-                    <div class="prime-card">
-                        <h2 style="color:#ff8c00">Success!</h2>
-                        <span class="label">NEW LEADER:</span> <span class="value">${result.leader}</span><br>
-                        <span class="label">JUMP OFFSET:</span> <span class="value">${result.offset}</span><br>
-                        <p style="font-size: 0.8em; color: gray;">Calculated in ${result.time_seconds}s</p>
-                    </div>`;
-            } else {
-                board.innerHTML = `<p style="color:red">Engine Error: ${JSON.stringify(result)}</p>`;
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+                console.log("Data received:", data);
+
+                if (data.leader) {
+                    display.innerHTML = `
+                        <div class="prime-card">
+                            <h2 style="color:#ff8c00">30-DIGIT LEADER FOUND</h2>
+                            <p><strong>VALUE:</strong> <span class="value">${data.leader}</span></p>
+                            <p><strong>OFFSET:</strong> ${data.offset}</p>
+                        </div>`;
+                } else {
+                    display.innerHTML = `<p style="color:red">Engine Error: ${data.error || 'Unknown error'}</p>`;
+                }
+            } catch (err) {
+                console.error(err);
+                display.innerHTML = `<p style="color:red">Connection Failed: ${err.message}<br>Check F12 Console for CORS/Token issues.</p>`;
             }
-
-        } catch (err) {
-            board.innerHTML = `<p style="color:red">Connection Error: ${err.message}</p>`;
         }
-    }
 
-    // Run the test when the page loads
-    window.onload = runTest;
+        ignite();
     </script>
 </body>
 </html>
