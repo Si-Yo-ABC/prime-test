@@ -24,40 +24,35 @@
         // ---------------------
 
         async function ignite() {
-            const display = document.getElementById('leaderboard');
-            try {
-                // Testing with a 30-digit prime candidate
-                const p = "1000000000000000000000000000033";
-                const shifts = "3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97";
+    const display = document.getElementById('leaderboard');
+    // STARTING FROM SCRATCH: Only 2 and 3
+    const p = "3"; 
+    const shifts = "2,3"; 
 
-                console.log("Calling Hugging Face...");
-                const response = await fetch(`${API_URL}?p=${p}&known_shifts=${shifts}`, {
-                    method: 'GET',
-                    headers: { 'Authorization': `Bearer ${TOKEN}` }
-                });
+    try {
+        const response = await fetch(`${API_URL}?p=${p}&known_shifts=${shifts}`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${TOKEN}` }
+        });
+        const data = await response.json();
 
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (data.leader) {
+            const purityColor = data.pure_prime ? "#00ff41" : "#ff0000";
+            const purityText = data.pure_prime ? "100% PURE PRIME" : "COMPOSITE DETECTED (FIX METHOD)";
 
-                const data = await response.json();
-                console.log("Data received:", data);
-
-                if (data.leader) {
-                    display.innerHTML = `
-                        <div class="prime-card">
-                            <h2 style="color:#ff8c00">30-DIGIT LEADER FOUND</h2>
-                            <p><strong>VALUE:</strong> <span class="value">${data.leader}</span></p>
-                            <p><strong>OFFSET:</strong> ${data.offset}</p>
-                        </div>`;
-                } else {
-                    display.innerHTML = `<p style="color:red">Engine Error: ${data.error || 'Unknown error'}</p>`;
-                }
-            } catch (err) {
-                console.error(err);
-                display.innerHTML = `<p style="color:red">Connection Failed: ${err.message}<br>Check F12 Console for CORS/Token issues.</p>`;
-            }
+            display.innerHTML = `
+                <div class="prime-card" style="border-color: ${purityColor}">
+                    <h2 style="color: ${purityColor}">${purityText}</h2>
+                    <p><strong>LEADER:</strong> <span class="value">${data.leader}</span></p>
+                    <hr>
+                    <p><strong>LANDING GEAR SHIFTS:</strong> ${data.landings}</p>
+                    <p><strong>HUNT TIME:</strong> ${data.time}s</p>
+                </div>`;
         }
-
-        ignite();
+    } catch (err) {
+        display.innerHTML = `<p style="color:red">Engine Stall: ${err.message}</p>`;
+    }
+}
     </script>
 </body>
 </html>
