@@ -52,28 +52,28 @@
 
         async function refreshDisplay() {
     try {
-        // Use the absolute URL to avoid any path confusion
-        const res = await fetch("https://si-yo-abc-prime-generator-api.hf.space/view_dna");
+        // We pass the currentLeader so the DB shows us what's coming up NEXT
+        const res = await fetch(`${BASE_URL}/view_dna?current_p=${currentLeader}`);
         const data = await res.json();
         
         const pBody = document.getElementById('prime-body');
         const sBody = document.getElementById('shift-body');
 
-        // Map the Primes: data.primes is a list of [value, find_time]
         if (pBody && data.primes) {
             pBody.innerHTML = data.primes.map(p => 
-                `<tr><td>${p[0]}</td><td>${p[1]}s</td></tr>`
+                `<tr><td>${p[0]}</td><td>${parseFloat(p[1]).toFixed(6)}s</td></tr>`
             ).join('');
         }
         
-        // Map the Shifts: data.shifts is a list of [value, parent_factor]
         if (sBody && data.shifts) {
+            // This will now show shifts like 9, 25, 49... 
+            // instead of jumping straight to 3481!
             sBody.innerHTML = data.shifts.map(s => 
                 `<tr><td>${s[0]}</td><td>${s[1]}</td></tr>`
             ).join('');
         }
     } catch (e) {
-        console.error("Dashboard Sync Error:", e);
+        console.error("Radar Error:", e);
     }
 }
 
