@@ -25,12 +25,11 @@
 
         async function ignite() {
     const display = document.getElementById('leaderboard');
-    // STARTING FROM SCRATCH: Only 2 and 3
-    const p = "3"; 
-    const shifts = "2,3"; 
+    // STARTING FROM SCRATCH: Only 1 and 2
+    const p = "1"; 
 
     try {
-        const response = await fetch(`${API_URL}?p=${p}&known_shifts=${shifts}`, {
+        const response = await fetch(`${API_URL}?p=${p}`, {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${TOKEN}` }
         });
