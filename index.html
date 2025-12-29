@@ -20,11 +20,8 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Axiom Prime Generator (Phase 4)</h1>
-        <button onclick="generatePrime()">CONSTRUCT 500-DIGIT AXIOM PRIME</button>
-        <div id="results"></div>
-    </div>
+    <h1>The Succession of the Spark</h1>
+    <div id="leaderboard">Loading the Dragon's History...</div>
 
     <script>
         // --- CONFIGURATION ---
@@ -36,9 +33,7 @@
 
         const TOKEN = partA + partB; 
         // ---------------------
-        async function generatePrime() {
-            const resDiv = document.getElementById('results');
-            resDiv.innerHTML = "<p>Constructing Prime via Axiom $2^n \cdot 3^n \cdot o$...</p>";
+        async function loadDragonData() {
             
             const response = await fetch(`${API_URL}`, {
                     method: 'GET',
@@ -48,18 +43,16 @@
                     }
                 });
             const data = await response.json();
+            const response = await fetch('shifts.db');
+            const buf = await response.arrayBuffer();
+            const SQL = await initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.6.2/${file}` });
+            const db = new SQL.Database(new Uint8Array(buf));
             
-            resDiv.innerHTML = `
-                <div class="prime-card">
-                    <div><span class="label">DATABASE ID:</span> <span class="value">${data.id}</span></div>
-                    <div class="dna-tag">DNA: ${data.dna}</div>
-                    <p><span class="label">ATTEMPTS (FRICTION):</span> <span style="color: #ff00ff; font-weight: bold;">${data.attempts}</span></p>
-                    <p><span class="label">OFFSET:</span> ${data.offset}</p>
-                    <p><span class="label">PRIME (500 DIGITS):</span></p>
-                    <div class="value">${data.prime}</div>
-                </div>
-            `;
+            const contents = db.exec("SELECT * FROM primes ORDER BY id DESC LIMIT 30");
+            // Logic to build a table from 'contents' goes here
+            console.log(contents);
         }
+        loadDragonData();
     </script>
 </body>
 </html>
