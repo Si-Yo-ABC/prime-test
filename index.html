@@ -33,26 +33,44 @@
 
         const TOKEN = partA + partB; 
         // ---------------------
-        async function loadDragonData() {
-            
-            const response = await fetch(`${API_URL}`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${TOKEN}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-            const data = await response.json();
-            const response = await fetch('shifts.db');
-            const buf = await response.arrayBuffer();
-            const SQL = await initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.6.2/${file}` });
-            const db = new SQL.Database(new Uint8Array(buf));
-            
-            const contents = db.exec("SELECT * FROM primes ORDER BY id DESC LIMIT 30");
-            // Logic to build a table from 'contents' goes here
-            console.log(contents);
+       async function loadDragonData() {
+    try {
+        // 1. Fetch from Hugging Face Engine
+        const apiResponse = await fetch(`${API_URL}?p=113&known_shifts=3,5,7`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${TOKEN}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        const result = await apiResponse.json();
+        console.log("New Leader Found:", result);
+
+        // 2. Load the SQLite DB from GitHub
+        const dbResponse = await fetch('shifts.db');
+        const buf = await dbResponse.arrayBuffer();
+        
+        // Initialize SQL.js
+        const SQL = await initSqlJs({ 
+            locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.6.2/${file}` 
+        });
+        
+        const db = new SQL.Database(new Uint8Array(buf));
+        const contents = db.exec("SELECT * FROM primes ORDER BY id DESC LIMIT 30");
+        
+        // Build the Display (Simplified)
+        if (contents.length > 0) {
+            let html = "<ul>";
+            contents[0].values.forEach(row => {
+                html += `<li>Leader: ${row[1]} (Offset: ${row[2]})</li>`;
+            });
+            html += "</ul>";
+            document.getElementById('leaderboard').innerHTML = html;
         }
-        loadDragonData();
+    } catch (err) {
+        console.error("Dragon Error:", err);
+    }
+}
     </script>
 </body>
 </html>
