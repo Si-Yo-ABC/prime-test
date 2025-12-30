@@ -40,7 +40,7 @@
         
             try {
                 const cleanUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
-                const res = await fetch(`${cleanUrl}/download_vault?password=${pw}`, {
+                const res = await fetch(`${cleanUrl}/download_vault`, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${TOKEN}` } // Same as your Purge!
                 });
