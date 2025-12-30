@@ -37,8 +37,6 @@
 
         // --- 1. Download Vault(solving the mystery) ---
         async function downloadVault() {
-            const pw = prompt("🔐 Enter High-Dragon Authorization Key:");
-            if (!pw) return;
         
             try {
                 const cleanUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
