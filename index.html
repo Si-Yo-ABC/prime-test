@@ -40,7 +40,7 @@
     <script>
         // --- CONFIGURATION ---
             // We know this works because you tested it in the browser!
-            const API_URL = "https://si-yo-abc-prime-generator-api.hf.space/generate"; 
+            const API_URL = "https://si-yo-abc-prime-generator-api.hf.space"; 
             // We split the token so GitHub doesn't "see" it and kill it
             const partA = "hf_"; 
             const partB = "dIhTAgaiHTPBRDcQBHnBzQHbVfttaGkQdI"; // Paste everything AFTER hf_ here
@@ -54,7 +54,7 @@
         async function refreshDisplay() {
             try {
                 // Sends currentLeader so Radar shows what is NEXT
-                const res = await fetch(`${BASE_URL}/view_dna?current_p=${currentLeader}`);
+                const res = await fetch(`${API_URL}/view_dna?current_p=${currentLeader}`);
                 const data = await res.json();
                 
                 const pBody = document.getElementById('prime-body');
@@ -88,7 +88,7 @@
             if (!pw) return;
     
             try {
-                const res = await fetch(`${BASE_URL}/purge_memory?password=${pw}`);
+                const res = await fetch(`${API_URL}/purge_memory?password=${pw}`);
                 const data = await res.json();
                 alert(data.status);
                 currentLeader = "1";
@@ -105,7 +105,7 @@
             display.innerHTML = `<h2 style="color: #ff8c00">Dragon is hunting from ${p}...</h2>`;
     
             try {
-                const response = await fetch(`${API_URL}?p=${p}`, {
+                const response = await fetch(`${API_URL}/generate?p=${p}`, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${TOKEN}` }
                 });
