@@ -39,85 +39,107 @@
 
     <script>
         // --- CONFIGURATION ---
-        // We know this works because you tested it in the browser!
-        const API_URL = "https://si-yo-abc-prime-generator-api.hf.space/generate"; 
-        // We split the token so GitHub doesn't "see" it and kill it
-        const partA = "hf_"; 
-        const partB = "dIhTAgaiHTPBRDcQBHnBzQHbVfttaGkQdI"; // Paste everything AFTER hf_ here
-
-        const TOKEN = partA + partB; 
+            // We know this works because you tested it in the browser!
+            const API_URL = "https://si-yo-abc-prime-generator-api.hf.space/generate"; 
+            // We split the token so GitHub doesn't "see" it and kill it
+            const partA = "hf_"; 
+            const partB = "dIhTAgaiHTPBRDcQBHnBzQHbVfttaGkQdI"; // Paste everything AFTER hf_ here
+    
+            const TOKEN = partA + partB; 
         // ---------------------
-        let currentLeader = "1"; // Global tracker
-
+    
+        let currentLeader = "1"; 
+    
+        // --- 1. THE RADAR (REFRESH DISPLAY) ---
         async function refreshDisplay() {
-    try {
-        // We pass the currentLeader so the DB shows us what's coming up NEXT
-        const res = await fetch(`${BASE_URL}/view_dna?current_p=${currentLeader}`);
-        const data = await res.json();
-        
-        const pBody = document.getElementById('prime-body');
-        const sBody = document.getElementById('shift-body');
-
-        if (pBody && data.primes) {
-            pBody.innerHTML = data.primes.map(p => 
-                `<tr><td>${p[0]}</td><td>${parseFloat(p[1]).toFixed(6)}s</td></tr>`
-            ).join('');
+            try {
+                // Sends currentLeader so Radar shows what is NEXT
+                const res = await fetch(`${BASE_URL}/view_dna?current_p=${currentLeader}`);
+                const data = await res.json();
+                
+                const pBody = document.getElementById('prime-body');
+                const sBody = document.getElementById('shift-body');
+    
+                if (pBody && data.primes) {
+                    // Now displays the new Research Columns: Value, Time, 2^p, 3^p
+                    pBody.innerHTML = data.primes.map(p => 
+                        `<tr>
+                            <td><strong>${p[0]}</strong></td>
+                            <td>${parseFloat(p[1]).toFixed(6)}s</td>
+                            <td style="color:#00bcff">${p[2] || '-'}</td>
+                            <td style="color:#bc00ff">${p[3] || '-'}</td>
+                        </tr>`
+                    ).join('');
+                }
+                
+                if (sBody && data.shifts) {
+                    sBody.innerHTML = data.shifts.map(s => 
+                        `<tr><td>${s[0]}</td><td style="color:#ff8c00">${s[1]}</td></tr>`
+                    ).join('');
+                }
+            } catch (e) {
+                console.error("Radar Sync Error:", e);
+            }
         }
-        
-        if (sBody && data.shifts) {
-            // This will now show shifts like 9, 25, 49... 
-            // instead of jumping straight to 3481!
-            sBody.innerHTML = data.shifts.map(s => 
-                `<tr><td>${s[0]}</td><td>${s[1]}</td></tr>`
-            ).join('');
+    
+        // --- 2. THE PURGE (CLEAN SLATE) ---
+        async function purgeVault() {
+            const pw = prompt("Enter Dragon Command Password to Wipe Database:");
+            if (!pw) return;
+    
+            try {
+                const res = await fetch(`${BASE_URL}/purge_memory?password=${pw}`);
+                const data = await res.json();
+                alert(data.status);
+                currentLeader = "1";
+                location.reload(); // Refresh to show the empty vault
+            } catch (e) {
+                alert("Purge Failed: Engine Offline.");
+            }
         }
-    } catch (e) {
-        console.error("Radar Error:", e);
-    }
-}
-
+    
+        // --- 3. THE IGNITION (GENERATE) ---
+        async function ignite(p) {
+            if (!p) p = currentLeader;
+            const display = document.getElementById('leaderboard');
+            display.innerHTML = `<h2 style="color: #ff8c00">Dragon is hunting from ${p}...</h2>`;
+    
+            try {
+                const response = await fetch(`${API_URL}?p=${p}`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                const data = await response.json();
+    
+                if (data.leader) {
+                    currentLeader = data.leader;
+                    const note = data.note === "Vault Hit" ? " (VAULT HIT)" : "";
+                    
+                    display.innerHTML = `
+                        <div class="prime-card" style="border-color: #00ff41">
+                            <h2 style="color: #00ff41">100% PURE PRIME FOUND${note}</h2>
+                            <p><strong>LEADER:</strong> <span class="value">${data.leader}</span></p>
+                            <hr>
+                            <p><strong>LANDING GEAR SHIFTS:</strong> ${data.landings || 0}</p>
+                            <p><strong>HUNT TIME:</strong> ${data.time}s</p>
+                        </div>`;
+                    
+                    document.getElementById('next-btn').style.display = "inline-block";
+                    document.getElementById('manual-p').value = data.leader;
+                }
+                refreshDisplay();
+            } catch (err) {
+                display.innerHTML = `<p style="color:red">Engine Stall: ${err.message}</p>`;
+            }
+        }
+    
         async function huntNext() {
-    // Hide the button so you don't double-click while it's thinking
-    document.getElementById('next-btn').style.display = "none";
-    await ignite(currentLeader);
-}
-
-async function ignite(p = "83") {
-    const display = document.getElementById('leaderboard');
-    display.innerHTML = `<h2 style="color: #ff8c00">Dragon is hunting from ${p}...</h2>`;
-
-    try {
-        const response = await fetch(`${API_URL}?p=${p}`, {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${TOKEN}` }
-        });
-        const data = await response.json();
-
-        if (data.leader) {
-            currentLeader = data.leader; // Feed the global tracker
-            const purityColor = data.pure_prime ? "#00ff41" : "#ff0000";
-            
-            display.innerHTML = `
-                <div class="prime-card" style="border-color: ${purityColor}">
-                    <h2 style="color: ${purityColor}">100% PURE PRIME FOUND</h2>
-                    <p><strong>LEADER:</strong> <span class="value" id="current-p">${data.leader}</span></p>
-                    <hr>
-                    <p><strong>LANDING GEAR SHIFTS:</strong> ${data.landings}</p>
-                    <p><strong>HUNT TIME:</strong> ${data.time}s</p>
-                </div>`;
-            
-            // Show the "Next" button for the next jump
-            document.getElementById('next-btn').style.display = "inline-block";
+            document.getElementById('next-btn').style.display = "none";
+            await ignite(currentLeader);
         }
-
+    
+        // Initial Load
         refreshDisplay();
-    } catch (err) {
-        display.innerHTML = `<p style="color:red">Engine Stall: ${err.message}</p>`;
-        document.getElementById('next-btn').style.display = "inline-block";
-    }
-}
-        // ACTUALLY RUN THE FUNCTION
-    ignite();
     </script>
 </body>
 </html>
