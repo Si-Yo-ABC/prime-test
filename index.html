@@ -36,21 +36,40 @@
         let currentLeader = "1"; 
 
         // --- 1. Download Vault(solving the mystery) ---
-        function downloadVault() {
-            const password = prompt("🔐 Enter High-Dragon Authorization Key to Access the Vault:");
-            
-            if (password === null || password === "") return; // User cancelled
+        async function downloadVault() {
+            const pw = prompt("🔐 Enter High-Dragon Authorization Key:");
+            if (!pw) return;
         
-            // Open the download link in a new tab or hidden iframe
-            const downloadUrl = `/download_vault?password=${encodeURIComponent(password)}`;
-            
-            // We attempt to trigger the download
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.download = 'Dragon_Flight_Log.csv';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            try {
+                const res = await fetch(`/download_vault?password=${encodeURIComponent(pw)}`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${TOKEN}` } // Same as your Purge!
+                });
+        
+                if (!res.ok) {
+                    alert("🛑 Access Denied: Invalid Password or Token.");
+                    return;
+                }
+        
+                // Convert the response to a Blob (the file data)
+                const blob = await res.blob();
+                
+                // Create a temporary link to trigger the download
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Dragon_Flight_Log_${new Date().getTime()}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                
+                // Cleanup
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+        
+            } catch (err) {
+                console.error("Vault Error:", err);
+                alert("Failed to reach the Vault.");
+            }
         }
     
         // --- 2. THE PURGE (CLEAN SLATE) ---
