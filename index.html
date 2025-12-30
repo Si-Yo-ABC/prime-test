@@ -42,6 +42,8 @@
     <script>
         // --- CONFIGURATION ---
             // We know this works because you tested it in the browser!
+            //const API_URL = "https://si-yo-abc-prime-generator-api.hf.space/generate";
+            //si-yo-abc/prime-generator-api
             const API_URL = "https://si-yo-abc-prime-generator-api.hf.space"; 
             // We split the token so GitHub doesn't "see" it and kill it
             const partA = "hf_"; 
@@ -57,7 +59,10 @@
             try {
                 // Added a safety check to make sure API_URL doesn't end in a slash
                 const cleanUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
-                const res = await fetch(`${cleanUrl}/view_dna?current_p=${currentLeader}`);
+                const res = await fetch(`${cleanUrl}/view_dna?current_p=${currentLeader}`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
             
                 // If the response is HTML (404 page), this will throw the error we saw
                 if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
@@ -96,7 +101,10 @@
             try {
                 // Added a safety check to make sure API_URL doesn't end in a slash
                 const cleanUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
-                const res = await fetch(`${cleanUrl}/purge_memory?password=${pw}`);
+                const res = await fetch(`${cleanUrl}/purge_memory?password=${pw}`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
                 // If the response is HTML (404 page), this will throw the error we saw
                 if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
                 const data = await res.json();
