@@ -41,7 +41,7 @@
             if (!pw) return;
         
             try {
-                const res = await fetch(`/download_vault?password=${encodeURIComponent(pw)}`, {
+                const res = await fetch(`/download_vault?password=${pw}`, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${TOKEN}` } // Same as your Purge!
                 });
