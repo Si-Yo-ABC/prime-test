@@ -15,28 +15,9 @@
     <button onclick="ignite(document.getElementById('manual-p').value)" style="background:#00ff41; color:#000; padding:10px 20px; border:none; cursor:pointer; font-weight:bold;">IGNITE ENGINE</button>
     
     <button onclick="purgeVault()" style="background:#440000; color:#ff0000; border:1px solid #ff0000; padding:10px; float:right; cursor:pointer;">PURGE ALL DATA</button>
-</div>
-<div id="vault-display" style="display:flex; gap:20px; margin-top:20px;">
-    <div style="flex:2; background:#000; border:1px solid #00ff41; height:400px; overflow-y:auto;">
-        <table style="width:100%; text-align:left; font-size:0.8em;">
-            <thead style="position:sticky; top:0; background:#222;">
-                <tr><th>Prime</th><th>2^p-e</th><th>3^p-e</th><th>Hunt Time</th></tr>
-            </thead>
-            <tbody id="prime-body"></tbody>
-        </table>
-    </div>
-    
-    <div style="flex:1; background:#000; border:1px solid #ff8c00; height:400px; overflow-y:auto;">
-        <table style="width:100%; text-align:left; font-size:0.8em;">
-            <thead style="position:sticky; top:0; background:#222;">
-                <tr><th>Shift Marker (Mine)</th><th>Origin</th></tr>
-            </thead>
-            <tbody id="shift-body"></tbody>
-        </table>
-    </div>
-</div>
-    
+</div>    
 <button id="next-btn" onclick="huntNext()" style="display:none; background:#00bcff; color:#000; padding:10px; border:none; margin-bottom:10px; font-weight:bold; cursor:pointer;">HUNT NEXT PRIME</button>
+<button onclick="downloadVault()" style="background:#440000; color:#ffaa55; border:1px solid #ff0000; padding:10px; float:right; cursor:pointer;">GET ALL DATA</button>
 <div id="leaderboard"></div>
 
     <script>
@@ -53,44 +34,23 @@
         // ---------------------
     
         let currentLeader = "1"; 
-    
-        // --- 1. THE RADAR (REFRESH DISPLAY) ---
-        async function refreshDisplay() {
-            try {
-                // Added a safety check to make sure API_URL doesn't end in a slash
-                const cleanUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
-                const res = await fetch(`${cleanUrl}/view_dna?current_p=${currentLeader}`, {
-                    method: 'GET',
-                    headers: { 'Authorization': `Bearer ${TOKEN}` }
-                });
+
+        // --- 1. Download Vault(solving the mystery) ---
+        function downloadVault() {
+            const password = prompt("🔐 Enter High-Dragon Authorization Key to Access the Vault:");
             
-                // If the response is HTML (404 page), this will throw the error we saw
-                if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
-                const data = await res.json();
-                
-                const pBody = document.getElementById('prime-body');
-                const sBody = document.getElementById('shift-body');
-    
-                if (pBody && data.primes) {
-                    // Now displays the new Research Columns: Value, Time, 2^p, 3^p
-                    pBody.innerHTML = data.primes.map(p => 
-                        `<tr>
-                            <td><strong>${p[0]}</strong></td>
-                            <td>${parseFloat(p[1]).toFixed(6)}s</td>
-                            <td style="color:#00bcff">${p[2] || '-'}</td>
-                            <td style="color:#bc00ff">${p[3] || '-'}</td>
-                        </tr>`
-                    ).join('');
-                }
-                
-                if (sBody && data.shifts) {
-                    sBody.innerHTML = data.shifts.map(s => 
-                        `<tr><td>${s[0]}</td><td style="color:#ff8c00">${s[1]}</td></tr>`
-                    ).join('');
-                }
-            } catch (e) {
-                console.error("Radar Sync Error:", e);
-            }
+            if (password === null || password === "") return; // User cancelled
+        
+            // Open the download link in a new tab or hidden iframe
+            const downloadUrl = `/download_vault?password=${encodeURIComponent(password)}`;
+            
+            // We attempt to trigger the download
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = 'Dragon_Flight_Log.csv';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     
         // --- 2. THE PURGE (CLEAN SLATE) ---
@@ -145,7 +105,6 @@
                     document.getElementById('next-btn').style.display = "inline-block";
                     document.getElementById('manual-p').value = data.leader;
                 }
-                refreshDisplay();
             } catch (err) {
                 display.innerHTML = `<p style="color:red">Engine Stall: ${err.message}</p>`;
             }
@@ -155,9 +114,6 @@
             document.getElementById('next-btn').style.display = "none";
             await ignite(currentLeader);
         }
-    
-        // Initial Load
-        refreshDisplay();
     </script>
 </body>
 </html>
