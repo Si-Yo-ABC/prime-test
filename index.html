@@ -9,16 +9,35 @@
     </style>
 </head>
 <body>
-<div class="research-controls" style="background:#111; padding:20px; border: 1px solid #444; border-radius:10px;">
-    <h3 style="color:#ff8c00; margin-top:0;">DRAGON CONTROL UNIT</h3>
-    <input type="number" id="manual-p" placeholder="Enter Starting Prime" style="background:#000; color:#00ff41; border:1px solid #00ff41; padding:10px;">
-    <button onclick="ignite(document.getElementById('manual-p').value)" style="background:#00ff41; color:#000; padding:10px 20px; border:none; cursor:pointer; font-weight:bold;">IGNITE ENGINE</button>
+<div class="container">
+    <div class="panel">
+        <button onclick="purgeVault()" class="btn-purge">PURGE VAULT</button>
+        <button onclick="downloadVault()" class="btn-download">DOWNLOAD LOGS</button>
+        <h3>Dragon Control Unit: Command Tower</h3>
+        
+        <div style="margin-bottom: 20px;">
+            <p style="color:#888;">[MICROSCOPE] Target Specific Prime or Exponent</p>
+            <input type="text" id="manual-p" placeholder="Enter Prime Number">
+            <button onclick="action('teleport')" class="btn-teleport">JUMP (TELEPORT)</button>
+            <button onclick="action('generate')" class="btn-ignite">CRAWL (SCOUT)</button>
+        </div>
+
+        <div>
+            <p style="color:#888;">[TELESCOPE] Target Digit Magnitude (e.g., 2500000000)</p>
+            <input type="number" id="digit-size" placeholder="Enter Digit Size">
+            <button onclick="huntMassive()" class="btn-ignite" style="background:#ff00ff;">GENERATE MASSIVE</button>
+        </div>
+    </div>
+
+    <div id="results-display"></div>
     
-    <button onclick="purgeVault()" style="background:#440000; color:#ff0000; border:1px solid #ff0000; padding:10px; float:right; cursor:pointer;">PURGE ALL DATA</button>
-</div>    
-<button id="next-btn" onclick="huntNext()" style="display:none; background:#00bcff; color:#000; padding:10px; border:none; margin-bottom:10px; font-weight:bold; cursor:pointer;">HUNT NEXT PRIME</button>
-<button onclick="downloadVault()" style="background:#440000; color:#ffaa55; border:1px solid #ff0000; padding:10px; float:right; cursor:pointer;">GET ALL DATA</button>
-<div id="leaderboard"></div>
+    <div class="panel" id="prey-board-container">
+        <h3>PREY BOARD (Leaderboard)</h3>
+        <div id="prey-board-list">Loading records...</div>
+    </div>
+</div>
+
+
 
     <script>
         // --- CONFIGURATION ---
@@ -32,8 +51,58 @@
     
             const TOKEN = partA + partB; 
         // ---------------------
-    
-        let currentLeader = "1"; 
+    let currentLeader = "";
+
+    async function action(type) {
+        const p = document.getElementById('manual-p').value || currentLeader;
+        const display = document.getElementById('results-display');
+        display.innerHTML = `<h2 style="color: #ff8c00">Dragon is ${type === 'teleport' ? 'Teleporting' : 'Scouting'} from ${p}...</h2>`;
+
+        try {
+            const endpoint = type === 'teleport' ? `/teleport?p=${p}` : `/generate?p=${p}`;
+            const response = await fetch(`${API_URL}${endpoint}`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${TOKEN}` }
+            });
+            const data = await response.json();
+
+            if (data.prime || data.leader) {
+                const prime = data.prime || data.leader;
+                currentLeader = prime;
+                document.getElementById('manual-p').value = prime;
+                
+                display.innerHTML = `
+                    <div class="prime-card">
+                        <h2 style="color: #00bcff">TARGET NEUTRALIZED (100% PURE)</h2>
+                        <span class="value">${prime}</span>
+                        <div class="stat-grid">
+                            <div class="stat-item"><span class="stat-label">FIND TIME</span>${data.find_time || data.time}s</div>
+                            <div class="stat-item"><span class="stat-label">CERTIFY TIME</span>${data.certify_time || 'N/A'}s</div>
+                            <div class="stat-item"><span class="stat-label">BEACONS EVADED</span>${data.beacons_evaded || data.landings || 0}</div>
+                            <div class="stat-item"><span class="stat-label">METHOD</span>${type.toUpperCase()}</div>
+                        </div>
+                    </div>`;
+                updatePreyBoard();
+            }
+        } catch (err) {
+            display.innerHTML = `<p style="color:red">Engine Stall: ${err.message}</p>`;
+        }
+    }
+
+    async function updatePreyBoard() {
+        try {
+            const res = await fetch(`${API_URL}/prey_board`, {
+                headers: { 'Authorization': `Bearer ${TOKEN}` }
+            });
+            const data = await res.json();
+            const list = document.getElementById('prey-board-list');
+            list.innerHTML = data.map(r => `
+                <div style="border-bottom:1px solid #333; padding:5px; font-size:0.9em;">
+                    [${r.find}s] Prime: ${r.value.substring(0,20)}... | Beacons: ${r.beacons}
+                </div>
+            `).join('');
+        } catch (e) { console.error("Prey Board Offline"); }
+    } 
 
         // --- 1. Download Vault(solving the mystery) ---
         async function downloadVault() {
@@ -94,44 +163,13 @@
             }
         }
     
-        // --- 3. THE IGNITION (GENERATE) ---
-        async function ignite(p) {
-            if (!p) p = currentLeader;
-            const display = document.getElementById('leaderboard');
-            display.innerHTML = `<h2 style="color: #ff8c00">Dragon is hunting from ${p}...</h2>`;
-    
-            try {
-                const response = await fetch(`${API_URL}/generate?p=${p}`, {
-                    method: 'GET',
-                    headers: { 'Authorization': `Bearer ${TOKEN}` }
-                });
-                const data = await response.json();
-    
-                if (data.leader) {
-                    currentLeader = data.leader;
-                    const note = data.note === "Vault Hit" ? " (VAULT HIT)" : "";
-                    
-                    display.innerHTML = `
-                        <div class="prime-card" style="border-color: #00ff41">
-                            <h2 style="color: #00ff41">100% PURE PRIME FOUND${note}</h2>
-                            <p><strong>LEADER:</strong> <span class="value">${data.leader}</span></p>
-                            <hr>
-                            <p><strong>LANDING GEAR SHIFTS:</strong> ${data.landings || 0}</p>
-                            <p><strong>HUNT TIME:</strong> ${data.time}s</p>
-                        </div>`;
-                    
-                    document.getElementById('next-btn').style.display = "inline-block";
-                    document.getElementById('manual-p').value = data.leader;
-                }
-            } catch (err) {
-                display.innerHTML = `<p style="color:red">Engine Stall: ${err.message}</p>`;
-            }
-        }
-    
         async function huntNext() {
             document.getElementById('next-btn').style.display = "none";
             await ignite(currentLeader);
         }
+
+        // Initialize board on load
+    updatePreyBoard();
     </script>
 </body>
 </html>
