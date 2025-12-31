@@ -3,29 +3,111 @@
 <head>
     <title>Dragon Engine Test</title>
     <style>
-        body { background: #0a0a0a; color: #00ff41; font-family: monospace; padding: 20px; }
-        .prime-card { border: 1px solid #ff8c00; padding: 20px; border-radius: 10px; background: #111; }
-        .value { color: white; word-break: break-all; font-size: 1.2em; }
+        body {
+    background-color: #0d1117;
+    color: #c9d1d9;
+    font-family: 'Courier New', Courier, monospace;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1100px;
+    margin: auto;
+    padding: 20px;
+}
+
+.panel {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+h3 {
+    color: #58a6ff;
+    border-bottom: 1px solid #30363d;
+    padding-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+input, select {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    color: #58a6ff;
+    padding: 10px;
+    border-radius: 4px;
+    font-family: inherit;
+}
+
+/* The Navigation Buttons */
+.btn-teleport { background: #238636; color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 4px; }
+.btn-ignite { background: #1f6feb; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; }
+.btn-purge { background: #da3633; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; font-size: 0.8em; }
+
+/* The Bifurcation Alert */
+#seed-panel {
+    border: 1px solid #d29922;
+    background: rgba(210, 153, 34, 0.1);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { border-color: #d29922; }
+    50% { border-color: #f0883e; }
+    100% { border-color: #d29922; }
+}
+
+.prime-card {
+    border-left: 4px solid #58a6ff;
+    background: #161b22;
+    padding: 20px;
+    border-radius: 0 6px 6px 0;
+}
+
+.value {
+    font-size: 1.5em;
+    color: #79c0ff;
+    display: block;
+    margin: 10px 0;
+    word-wrap: break-word;
+}
     </style>
 </head>
 <body>
 <div class="container">
     <div class="panel">
-        <button onclick="purgeVault()" class="btn-purge">PURGE VAULT</button>
-        <button onclick="downloadVault()" class="btn-download">DOWNLOAD LOGS</button>
-        <h3>Dragon Control Unit: Command Tower</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3>Dragon Control Unit: Command Tower</h3>
+            <div>
+                <button onclick="downloadVault()" class="btn-download">LOGS</button>
+                <button onclick="purgeVault()" class="btn-purge">PURGE</button>
+            </div>
+        </div>
+
+        <div class="lane-selector" style="background: #1a1a1a; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #333;">
+            <p style="color:#00bcff; margin-top:0;">[NAVIGATION] Select Flight Lane</p>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <select id="route-type" onchange="toggleBaseInput()" style="flex-grow: 1; padding: 8px;">
+                    <option value="binary">GIMPS Track (2^n)</option>
+                    <option value="multi">Universal Track (P^n)</option>
+                </select>
+                <input type="number" id="base-val" placeholder="Base P" value="3" style="width: 80px; display: none;">
+            </div>
+        </div>
         
         <div style="margin-bottom: 20px;">
             <p style="color:#888;">[MICROSCOPE] Target Specific Prime or Exponent</p>
-            <input type="text" id="manual-p" placeholder="Enter Prime Number">
+            <input type="text" id="manual-p" placeholder="Enter Starting Point">
             <button onclick="action('teleport')" class="btn-teleport">JUMP (TELEPORT)</button>
             <button onclick="action('generate')" class="btn-ignite">CRAWL (SCOUT)</button>
         </div>
 
-        <div>
-            <p style="color:#888;">[TELESCOPE] Target Digit Magnitude (e.g., 2500000000)</p>
-            <input type="number" id="digit-size" placeholder="Enter Digit Size">
-            <button onclick="huntMassive()" class="btn-ignite" style="background:#ff00ff;">GENERATE MASSIVE</button>
+        <div id="seed-panel" style="display:none; background: #2b1a00; padding: 15px; border-radius: 8px; border: 1px solid #ff8c00; margin-top: 10px;">
+            <p style="color:#ff8c00; margin-top:0;">⚠️ STALL DETECTED: Bifurcation Possible</p>
+            <div id="seed-buttons" style="display: flex; flex-wrap: wrap; gap: 5px;"></div>
         </div>
     </div>
 
@@ -36,9 +118,6 @@
         <div id="prey-board-list">Loading records...</div>
     </div>
 </div>
-
-
-
     <script>
         // --- CONFIGURATION ---
             // We know this works because you tested it in the browser!
@@ -53,13 +132,27 @@
         // ---------------------
     let currentLeader = "";
 
-    async function action(type) {
+    function toggleBaseInput() {
+        const isMulti = document.getElementById('route-type').value === 'multi';
+        document.getElementById('base-val').style.display = isMulti ? 'block' : 'none';
+    }
+
+    async function action(type, forcedBase = null) {
         const p = document.getElementById('manual-p').value || currentLeader;
+        const route = document.getElementById('route-type').value;
+        const base = forcedBase || document.getElementById('base-val').value;
         const display = document.getElementById('results-display');
-        display.innerHTML = `<h2 style="color: #ff8c00">Dragon is ${type === 'teleport' ? 'Teleporting' : 'Scouting'} from ${p}...</h2>`;
+        const seedPanel = document.getElementById('seed-panel');
+        
+        seedPanel.style.display = "none"; // Reset panel
+        display.innerHTML = `<h2 style="color: #ff8c00">Dragon is ${type === 'teleport' ? 'Teleporting' : 'Scouting'} in ${route.toUpperCase()} Lane (Base ${base})...</h2>`;
 
         try {
-            const endpoint = type === 'teleport' ? `/teleport?p=${p}` : `/generate?p=${p}`;
+            // Updated endpoint to handle new parameters
+            const endpoint = type === 'teleport' 
+                ? `/teleport?p=${p}&route=${route}&base=${base}` 
+                : `/generate?p=${p}`;
+
             const response = await fetch(`${API_URL}${endpoint}`, {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${TOKEN}` }
@@ -71,22 +164,51 @@
                 currentLeader = prime;
                 document.getElementById('manual-p').value = prime;
                 
-                display.innerHTML = `
-                    <div class="prime-card">
-                        <h2 style="color: #00bcff">TARGET NEUTRALIZED (100% PURE)</h2>
-                        <span class="value">${prime}</span>
-                        <div class="stat-grid">
-                            <div class="stat-item"><span class="stat-label">FIND TIME</span>${data.find_time || data.time}s</div>
-                            <div class="stat-item"><span class="stat-label">CERTIFY TIME</span>${data.certify_time || 'N/A'}s</div>
-                            <div class="stat-item"><span class="stat-label">BEACONS EVADED</span>${data.beacons_evaded || data.landings || 0}</div>
-                            <div class="stat-item"><span class="stat-label">METHOD</span>${type.toUpperCase()}</div>
-                        </div>
-                    </div>`;
+                // Show the standard result card...
+                display.innerHTML = renderResultCard(data, type);
                 updatePreyBoard();
+            } else if (data.alpha_seed) {
+                // If it stalls but returns an Alpha Seed, show the Bifurcation Panel
+                showBifurcation(data);
             }
         } catch (err) {
             display.innerHTML = `<p style="color:red">Engine Stall: ${err.message}</p>`;
         }
+    }
+
+    function showBifurcation(data) {
+        const seedPanel = document.getElementById('seed-panel');
+        const seedButtons = document.getElementById('seed-buttons');
+        seedPanel.style.display = "block";
+        
+        // Take all unique seeds from the split composite logic
+        const seeds = data.all_seeds || [data.alpha_seed];
+        seedButtons.innerHTML = seeds.map(s => `
+            <button onclick="switchLaneAndJump(${s})" style="background:#ff8c00; color:black; border:none; padding:5px 10px; cursor:pointer; font-weight:bold;">
+                FOLLOW SEED ${s}
+            </button>
+        `).join('');
+    }
+
+    function switchLaneAndJump(newBase) {
+        document.getElementById('route-type').value = 'multi';
+        document.getElementById('base-val').value = newBase;
+        toggleBaseInput();
+        action('teleport', newBase);
+    }
+
+    function renderResultCard(data, type) {
+        return `
+            <div class="prime-card">
+                <h2 style="color: #00bcff">TARGET NEUTRALIZED (${data.type || '100% PURE'})</h2>
+                <span class="value" style="word-break: break-all;">${data.prime || data.leader}</span>
+                <div class="stat-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
+                    <div class="stat-item"><span class="stat-label">FIND TIME:</span> ${data.time || data.find_time}s</div>
+                    <div class="stat-item"><span class="stat-label">BEACONS:</span> ${data.beacons_evaded || data.landings || 0}</div>
+                    <div class="stat-item"><span class="stat-label">DNA:</span> ${data.structure || 'N/A'}</div>
+                    <div class="stat-item"><span class="stat-label">ALPHA:</span> ${data.alpha_seed || 'None'}</div>
+                </div>
+            </div>`;
     }
 
     async function updatePreyBoard() {
