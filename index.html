@@ -224,73 +224,37 @@ input, select {
     
         // --- 1. Download Vault(solving the mystery) ---
 
-        async function downloadVault() {
+        async function downloadVault(){
+    try {
+        const response = await fetch(`${API_URL}/download_vault`, {
+            headers: { 'Authorization': `Bearer ${TOKEN}` }
+        });
 
+        if (!response.ok) throw new Error("Download failed");
+
+        // Convert the response to a Blob (Binary Large Object)
+        const blob = await response.blob();
         
-
-            try {
-
-                const cleanUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
-
-                const res = await fetch(`${cleanUrl}/download_vault`, {
-
-                    method: 'GET',
-
-                    headers: { 'Authorization': `Bearer ${TOKEN}` } // Same as your Purge!
-
-                });
-
+        // Create a temporary URL for the blob
+        const url = window.URL.createObjectURL(blob);
         
-
-                if (!res.ok) {
-
-                    alert("🛑 Access Denied: Invalid Password or Token.");
-
-                    return;
-
-                }
-
+        // Create a hidden 'a' tag to trigger the download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `dragon_harvest_${new Date().getTime()}.csv`;
+        document.body.appendChild(a);
         
-
-                // Convert the response to a Blob (the file data)
-
-                const blob = await res.blob();
-
-                
-
-                // Create a temporary link to trigger the download
-
-                const url = window.URL.createObjectURL(blob);
-
-                const a = document.createElement('a');
-
-                a.href = url;
-
-                a.download = `Dragon_Flight_Log_${new Date().getTime()}.csv`;
-
-                document.body.appendChild(a);
-
-                a.click();
-
-                
-
-                // Cleanup
-
-                window.URL.revokeObjectURL(url);
-
-                document.body.removeChild(a);
-
+        // Programmatically click the link
+        a.click();
         
+        // Clean up
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
 
-            } catch (err) {
-
-                console.error("Vault Error:", err);
-
-                alert("Failed to reach the Vault.");
-
-            }
-
-        }
+    } catch (err) {
+        alert("Download Error: " + err.message);
+    }
+}
 
     
 
