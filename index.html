@@ -77,48 +77,22 @@ input, select {
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="panel">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3>Dragon Control Unit: Command Tower</h3>
-            <div>
-                <button onclick="downloadVault()" class="btn-download">LOGS</button>
-                <button onclick="purgeVault()" class="btn-purge">PURGE</button>
-            </div>
-        </div>
-
-        <div class="lane-selector" style="background: #1a1a1a; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #333;">
-            <p style="color:#00bcff; margin-top:0;">[NAVIGATION] Select Flight Lane</p>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <select id="route-type" onchange="toggleBaseInput()" style="flex-grow: 1; padding: 8px;">
-                    <option value="binary">GIMPS Track (2^n)</option>
-                    <option value="multi">Universal Track (P^n)</option>
-                </select>
-                <input type="number" id="base-val" placeholder="Base P" value="3" style="width: 80px; display: none;">
-            </div>
-        </div>
-        
-        <div style="margin-bottom: 20px;">
-            <p style="color:#888;">[MICROSCOPE] Target Specific Prime or Exponent</p>
-            <input type="text" id="manual-p" placeholder="Enter Starting Point">
-            <button onclick="action('teleport')" class="btn-teleport">JUMP (TELEPORT)</button>
-            <button onclick="action('generate')" class="btn-ignite">CRAWL (SCOUT)</button>
-        </div>
-
-        <div id="seed-panel" style="display:none; background: #2b1a00; padding: 15px; border-radius: 8px; border: 1px solid #ff8c00; margin-top: 10px;">
-            <p style="color:#ff8c00; margin-top:0;">⚠️ STALL DETECTED: Bifurcation Possible</p>
-            <div id="seed-buttons" style="display: flex; flex-wrap: wrap; gap: 5px;"></div>
-        </div>
+<div class="panel">
+    <div style="background: #111; padding: 10px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #00bcff;">
+        <p style="color:#888; margin: 0 0 5px 0; font-size: 0.8em;">[BURST MODE] Sequences per Ignition</p>
+        <input type="number" id="jump-count" value="1" min="1" max="100" style="width: 60px; background: black; color: #00bcff; border: 1px solid #333;">
     </div>
 
-    <div id="results-display"></div>
+    <div style="margin-bottom: 20px;">
+        <p style="color:#888;">[MICROSCOPE] Target Starting Point</p>
+        <input type="text" id="manual-p" placeholder="Enter Starting Prime">
+        <button onclick="action('jump')" class="btn-teleport">JUMP (LEAPER)</button>
+        <button onclick="action('next')" class="btn-ignite">CRAWL (CRAWLER)</button>
+    </div>
     
-    <div class="panel" id="prey-board-container">
-        <h3>PREY BOARD (Leaderboard)</h3>
-        <div id="prey-board-list">Loading records...</div>
     </div>
-</div>
-    <script>
+
+<script>
         // --- CONFIGURATION ---
             // We know this works because you tested it in the browser!
             //const API_URL = "https://si-yo-abc-prime-generator-api.hf.space/generate";
@@ -129,138 +103,85 @@ input, select {
             const partB = "dIhTAgaiHTPBRDcQBHnBzQHbVfttaGkQdI"; // Paste everything AFTER hf_ here
     
             const TOKEN = partA + partB; 
-        // ---------------------
+        // --------------------- 
     let currentLeader = "";
 
-    function toggleBaseInput() {
-        const isMulti = document.getElementById('route-type').value === 'multi';
-        document.getElementById('base-val').style.display = isMulti ? 'block' : 'none';
-    }
-
-    async function action(type, forcedBase = null) {
-        const p = document.getElementById('manual-p').value || currentLeader;
-        const route = document.getElementById('route-type').value;
-        const base = forcedBase || document.getElementById('base-val').value;
-        const display = document.getElementById('results-display');
-        const seedPanel = document.getElementById('seed-panel');
+    async function action(btnType) {
+        // 1. Pull current inputs
+        const p = document.getElementById('manual-p').value || "3";
+        const branch = document.getElementById('base-val').value || "2";
+        const jumps = document.getElementById('jump-count').value || 1;
         
-        seedPanel.style.display = "none"; // Reset panel
-        display.innerHTML = `<h2 style="color: #ff8c00">Dragon is ${type === 'teleport' ? 'Teleporting' : 'Scouting'} in ${route.toUpperCase()} Lane (Base ${base})...</h2>`;
+        const display = document.getElementById('results-display');
+        display.innerHTML = `<h2 style="color: #ff8c00">Dragon is ${btnType === 'jump' ? 'Leaping' : 'Crawling'}...</h2>`;
 
         try {
-            // Updated endpoint to handle new parameters
-            const endpoint = type === 'teleport' 
-                ? `/teleport?p=${p}&route=${route}&base=${base}` 
-                : `/generate?p=${p}`;
+            // 2. Build Query - Matching your @app.get("/generate") parameters
+            const params = new URLSearchParams({
+                current_p: p,
+                p_branch: branch,
+                jumps: jumps,
+                button_clicked: btnType
+            });
 
-            const response = await fetch(`${API_URL}${endpoint}`, {
+            const response = await fetch(`${API_URL}/generate?${params.toString()}`, {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${TOKEN}` }
             });
             const data = await response.json();
 
-            if (data.prime || data.leader) {
-                const prime = data.prime || data.leader;
-                currentLeader = prime;
-                document.getElementById('manual-p').value = prime;
+            if (data.status === "success") {
+                // Update UI for next run
+                currentLeader = data.new_start_p;
+                document.getElementById('manual-p').value = currentLeader;
                 
-                // Show the standard result card...
-                display.innerHTML = renderResultCard(data, type);
-                updatePreyBoard();
-            } else if (data.alpha_seed) {
-                // If it stalls but returns an Alpha Seed, show the Bifurcation Panel
-                showBifurcation(data);
+                // Render the results from the history list
+                display.innerHTML = data.history.map(item => renderResultCard(item)).join('');
+                
+                // Refresh Leaderboard
+                updateDisplayBoard();
             }
         } catch (err) {
             display.innerHTML = `<p style="color:red">Engine Stall: ${err.message}</p>`;
         }
     }
 
-    function showBifurcation(data) {
-        const seedPanel = document.getElementById('seed-panel');
-        const seedButtons = document.getElementById('seed-buttons');
-        seedPanel.style.display = "block";
-        
-        // Take all unique seeds from the split composite logic
-        const seeds = data.all_seeds || [data.alpha_seed];
-        seedButtons.innerHTML = seeds.map(s => `
-            <button onclick="switchLaneAndJump(${s})" style="background:#ff8c00; color:black; border:none; padding:5px 10px; cursor:pointer; font-weight:bold;">
-                FOLLOW SEED ${s}
-            </button>
-        `).join('');
-    }
+    function renderResultCard(item) {
+        // 'item' comes from the 'history' array in your Python return
+        const isPrime = item.is_prime;
+        const color = isPrime ? "#00bcff" : "#ff4444";
+        const label = isPrime ? "TARGET NEUTRALIZED (C2)" : "C7 GROUND IDENTIFIED";
 
-    function switchLaneAndJump(newBase) {
-        document.getElementById('route-type').value = 'multi';
-        document.getElementById('base-val').value = newBase;
-        toggleBaseInput();
-        action('teleport', newBase);
-    }
-
-    function renderResultCard(data, type) {
         return `
-            <div class="prime-card">
-                <h2 style="color: #00bcff">TARGET NEUTRALIZED (${data.type || '100% PURE'})</h2>
-                <span class="value" style="word-break: break-all;">${data.prime || data.leader}</span>
-                <div class="stat-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
-                    <div class="stat-item"><span class="stat-label">FIND TIME:</span> ${data.time || data.find_time}s</div>
-                    <div class="stat-item"><span class="stat-label">BEACONS:</span> ${data.beacons_evaded || data.landings || 0}</div>
-                    <div class="stat-item"><span class="stat-label">DNA:</span> ${data.structure || 'N/A'}</div>
-                    <div class="stat-item"><span class="stat-label">ALPHA:</span> ${data.alpha_seed || 'None'}</div>
+            <div class="prime-card" style="border-left: 5px solid ${color}; margin-bottom: 10px; background: #111; padding: 15px;">
+                <h3 style="color: ${color}; margin: 0;">${label}</h3>
+                <span class="value" style="word-break: break-all; font-family: monospace; color: white;">${item.val}</span>
+                <div class="stat-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px; font-size: 0.8em;">
+                    <div class="stat-item"><span style="color:#888">METHOD:</span> ${item.algo || 'Crawler'}</div>
+                    <div class="stat-item"><span style="color:#888">HITS:</span> ${item.hits ? item.hits.length : 0} Beacons</div>
+                    <div class="stat-item"><span style="color:#888">STATUS:</span> ${item.status || 'Verified'}</div>
                 </div>
             </div>`;
     }
 
-    async function updatePreyBoard() {
+    async function updateDisplayBoard() {
         try {
-            const res = await fetch(`${API_URL}/prey_board`, {
+            // Updated to use the 'get_leaderboard' logic
+            const res = await fetch(`${API_URL}/display_board`, {
                 headers: { 'Authorization': `Bearer ${TOKEN}` }
             });
             const data = await res.json();
             const list = document.getElementById('prey-board-list');
+            
             list.innerHTML = data.map(r => `
-                <div style="border-bottom:1px solid #333; padding:5px; font-size:0.9em;">
-                    [${r.find}s] Prime: ${r.value.substring(0,20)}... | Beacons: ${r.beacons}
+                <div style="border-bottom:1px solid #333; padding:8px; font-size:0.9em; display: flex; justify-content: space-between;">
+                    <span style="color: #00bcff;">${r.value.substring(0,15)}...</span>
+                    <span style="color: #888;">[${r.method}]</span>
+                    <span style="color: #ff8c00;">${r.beacons} Hits</span>
                 </div>
             `).join('');
-        } catch (e) { console.error("Prey Board Offline"); }
-    } 
-
-        // --- 1. Download Vault(solving the mystery) ---
-        async function downloadVault() {
-        
-            try {
-                const cleanUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
-                const res = await fetch(`${cleanUrl}/download_vault`, {
-                    method: 'GET',
-                    headers: { 'Authorization': `Bearer ${TOKEN}` } // Same as your Purge!
-                });
-        
-                if (!res.ok) {
-                    alert("🛑 Access Denied: Invalid Password or Token.");
-                    return;
-                }
-        
-                // Convert the response to a Blob (the file data)
-                const blob = await res.blob();
-                
-                // Create a temporary link to trigger the download
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `Dragon_Flight_Log_${new Date().getTime()}.csv`;
-                document.body.appendChild(a);
-                a.click();
-                
-                // Cleanup
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-        
-            } catch (err) {
-                console.error("Vault Error:", err);
-                alert("Failed to reach the Vault.");
-            }
-        }
+        } catch (e) { console.error("Leaderboard Sync Failed"); }
+    }    <script>
     
         // --- 2. THE PURGE (CLEAN SLATE) ---
         async function purgeVault() {
@@ -291,7 +212,7 @@ input, select {
         }
 
         // Initialize board on load
-    updatePreyBoard();
+    updateDisplayBoard(); // Initial load
     </script>
 </body>
 </html>
