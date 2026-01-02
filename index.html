@@ -78,19 +78,29 @@ input, select {
 </head>
 <body>
 <div class="panel">
-    <div style="background: #111; padding: 10px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #00bcff;">
-        <p style="color:#888; margin: 0 0 5px 0; font-size: 0.8em;">[BURST MODE] Sequences per Ignition</p>
-        <input type="number" id="jump-count" value="1" min="1" max="100" style="width: 60px; background: black; color: #00bcff; border: 1px solid #333;">
+    <h3>Dragon Control Unit: Command Tower</h3>
+    
+    <div style="margin-bottom: 15px;">
+        <p style="color:#888; margin-bottom:5px;">[COORDINATES] Starting Prime ($p$)</p>
+        <input type="text" id="manual-p" placeholder="e.g. 104729" style="width: 100%;">
+    </div>
+
+    <div id="seed-input-area" style="margin-bottom: 15px; padding: 10px; background: #1a1a1a; border-radius: 5px; border: 1px solid #333;">
+        <p style="color:#ff8c00; margin-top:0; font-size: 0.9em;">[GAPPING] Seed Prime ($s$)</p>
+        <input type="number" id="seed-p" placeholder="Seed for Gaps/Resonance" value="2" style="width: 100%;">
+        <small style="color: #555;">Required for JUMP; ignored for CRAWL unless hitting beacons.</small>
     </div>
 
     <div style="margin-bottom: 20px;">
-        <p style="color:#888;">[MICROSCOPE] Target Starting Point</p>
-        <input type="text" id="manual-p" placeholder="Enter Starting Prime">
+        <p style="color:#888; margin-bottom:5px;">[ITERATIONS] Loop Count</p>
+        <input type="number" id="jump-count" value="1" min="1" style="width: 80px;">
+    </div>
+
+    <div style="margin-bottom: 20px;">
         <button onclick="action('jump')" class="btn-teleport">JUMP (LEAPER)</button>
         <button onclick="action('next')" class="btn-ignite">CRAWL (CRAWLER)</button>
-    </div>
-    
-    </div>
+    </div>    
+</div>
 
 <script>
         // --- CONFIGURATION ---
@@ -107,45 +117,54 @@ input, select {
     let currentLeader = "";
 
     async function action(btnType) {
-        // 1. Pull current inputs
-        const p = document.getElementById('manual-p').value || "3";
-        const branch = document.getElementById('base-val').value || "2";
-        const jumps = document.getElementById('jump-count').value || 1;
-        
-        const display = document.getElementById('results-display');
-        display.innerHTML = `<h2 style="color: #ff8c00">Dragon is ${btnType === 'jump' ? 'Leaping' : 'Crawling'}...</h2>`;
+    const pStart = document.getElementById('manual-p').value;
+    const sSeed = document.getElementById('seed-p').value;
+    const loopCount = document.getElementById('jump-count').value || 1;
+    const display = document.getElementById('results-display');
 
-        try {
-            // 2. Build Query - Matching your @app.get("/generate") parameters
-            const params = new URLSearchParams({
-                current_p: p,
-                p_branch: branch,
-                jumps: jumps,
-                button_clicked: btnType
-            });
-
-            const response = await fetch(`${API_URL}/generate?${params.toString()}`, {
-                method: 'GET',
-                headers: { 'Authorization': `Bearer ${TOKEN}` }
-            });
-            const data = await response.json();
-
-            if (data.status === "success") {
-                // Update UI for next run
-                currentLeader = data.new_start_p;
-                document.getElementById('manual-p').value = currentLeader;
-                
-                // Render the results from the history list
-                display.innerHTML = data.history.map(item => renderResultCard(item)).join('');
-                
-                // Refresh Leaderboard
-                updateDisplayBoard();
-            }
-        } catch (err) {
-            display.innerHTML = `<p style="color:red">Engine Stall: ${err.message}</p>`;
-        }
+    // Validation: Jump requires a Seed Prime
+    if (actionType === 'jump' && !sSeed) {
+        alert("The Leaper requires a Seed Prime to calculate gaps and resonance.");
+        return;
     }
 
+    display.innerHTML = `<h2 style="color: #ff8c00">Executing ${actionType.toUpperCase()} Sequence...</h2>`;
+
+    try {
+        // Constructing the URL with all 4 necessary data points
+        const params = new URLSearchParams({
+            current_p: pStart || "3",
+            p_branch: sSeed || "2", // This is your 's'
+            jumps: loopCount,
+            button_clicked: actionType // This tells Python which function to run
+        });
+
+        const response = await fetch(`${API_URL}/generate?${params.toString()}`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${TOKEN}` }
+        });
+        
+        const data = await response.json();
+
+        if (data.status === "success") {
+            // Update the Starting Point input so the next click continues from where we landed
+            document.getElementById('manual-p').value = data.new_start_p;
+            
+            // Map the history results into the display area
+            display.innerHTML = data.history.map(item => `
+                <div class="result-entry" style="border-left: 4px solid ${item.is_prime ? '#00bcff' : '#ff4444'}; padding: 10px; margin-bottom: 5px; background: #111;">
+                    <strong>${item.is_prime ? 'PRIME FOUND' : 'COMPOSITE'}</strong>: ${item.val}
+                    <br><small>Method: ${item.algo || actionType} | Hits: ${item.hits ? item.hits.length : 0}</small>
+                </div>
+            `).join('');
+            
+            updateDisplayBoard();
+        }
+    } catch (err) {
+        display.innerHTML = `<p style="color:red">Transmission Error: ${err.message}</p>`;
+    }
+}
+        
     function renderResultCard(item) {
         // 'item' comes from the 'history' array in your Python return
         const isPrime = item.is_prime;
