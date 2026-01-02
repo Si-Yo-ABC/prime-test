@@ -224,35 +224,39 @@ input, select {
     
         // --- 1. Download Vault(solving the mystery) ---
 
-        async function downloadVault(){
+        async function downloadVault() {
+    console.log("Requesting Harvest from Vault...");
     try {
         const response = await fetch(`${API_URL}/download_vault`, {
-            headers: { 'Authorization': `Bearer ${TOKEN}` }
+            method: 'GET',
+            headers: { 
+                'Authorization': `Bearer ${TOKEN}`
+            }
         });
 
-        if (!response.ok) throw new Error("Download failed");
+        if (!response.ok) throw new Error(`Server responded with ${response.status}`);
 
-        // Convert the response to a Blob (Binary Large Object)
+        // 1. Take the response and turn it into a Blob (Binary Large Object)
         const blob = await response.blob();
-        
-        // Create a temporary URL for the blob
+
+        // 2. Create a virtual URL for this file
         const url = window.URL.createObjectURL(blob);
-        
-        // Create a hidden 'a' tag to trigger the download
+
+        // 3. Create a hidden link and click it automatically
         const a = document.createElement('a');
         a.href = url;
-        a.download = `dragon_harvest_${new Date().getTime()}.csv`;
+        a.download = `dragon_prime_harvest_${new Date().toISOString().slice(0,10)}.csv`;
         document.body.appendChild(a);
-        
-        // Programmatically click the link
         a.click();
-        
-        // Clean up
+
+        // 4. Cleanup memory
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-
+        
+        console.log("Harvest saved successfully.");
     } catch (err) {
-        alert("Download Error: " + err.message);
+        console.error("Download failed:", err);
+        alert("Download Failed: " + err.message);
     }
 }
 
