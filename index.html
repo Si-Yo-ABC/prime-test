@@ -78,7 +78,13 @@ input, select {
 </head>
 <body>
 <div class="panel">
-    <h3>Dragon Control Unit: Command Tower</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="margin: 0;">Dragon Control Unit: Command Tower</h3>
+        <div>
+            <button onclick="downloadVault()" class="btn-download" style="background: #222; color: #00bcff; border: 1px solid #00bcff; padding: 5px 10px; cursor: pointer; border-radius: 4px;">LOGS</button>
+            <button onclick="purgeVault()" class="btn-purge" style="background: #222; color: #ff4444; border: 1px solid #ff4444; padding: 5px 10px; cursor: pointer; border-radius: 4px; margin-left: 5px;">PURGE</button>
+        </div>
+    </div>
     
     <div style="margin-bottom: 15px;">
         <p style="color:#888; margin-bottom:5px;">[COORDINATES] Starting Prime ($p$)</p>
@@ -202,33 +208,125 @@ input, select {
         } catch (e) { console.error("Leaderboard Sync Failed"); }
     }  
     
-        // --- 2. THE PURGE (CLEAN SLATE) ---
-        async function purgeVault() {
-            const pw = prompt("Enter Dragon Command Password to Wipe Database:");
-            if (!pw) return;
-    
+        // --- 1. Download Vault(solving the mystery) ---
+
+        async function downloadVault() {
+
+        
+
             try {
-                // Added a safety check to make sure API_URL doesn't end in a slash
+
                 const cleanUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
-                const res = await fetch(`${cleanUrl}/purge_memory?password=${pw}`, {
+
+                const res = await fetch(`${cleanUrl}/download_vault`, {
+
                     method: 'GET',
-                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+
+                    headers: { 'Authorization': `Bearer ${TOKEN}` } // Same as your Purge!
+
                 });
-                // If the response is HTML (404 page), this will throw the error we saw
-                if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
-                const data = await res.json();
-                alert(data.status);
-                currentLeader = "1";
-                location.reload(); // Refresh to show the empty vault
-            } catch (e) {
-                alert("Purge Failed: Engine Offline.");
+
+        
+
+                if (!res.ok) {
+
+                    alert("🛑 Access Denied: Invalid Password or Token.");
+
+                    return;
+
+                }
+
+        
+
+                // Convert the response to a Blob (the file data)
+
+                const blob = await res.blob();
+
+                
+
+                // Create a temporary link to trigger the download
+
+                const url = window.URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+
+                a.href = url;
+
+                a.download = `Dragon_Flight_Log_${new Date().getTime()}.csv`;
+
+                document.body.appendChild(a);
+
+                a.click();
+
+                
+
+                // Cleanup
+
+                window.URL.revokeObjectURL(url);
+
+                document.body.removeChild(a);
+
+        
+
+            } catch (err) {
+
+                console.error("Vault Error:", err);
+
+                alert("Failed to reach the Vault.");
+
             }
+
         }
+
     
-        async function huntNext() {
-            document.getElementById('next-btn').style.display = "none";
-            await ignite(currentLeader);
+
+        // --- 2. THE PURGE (CLEAN SLATE) --- PURGE MUST UNCHANGED
+
+        async function purgeVault() {
+
+            const pw = prompt("Enter Dragon Command Password to Wipe Database:");
+
+            if (!pw) return;
+
+    
+
+            try {
+
+                // Added a safety check to make sure API_URL doesn't end in a slash
+
+                const cleanUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+
+                const res = await fetch(`${cleanUrl}/purge_memory?password=${pw}`, {
+
+                    method: 'GET',
+
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+
+                });
+
+                // If the response is HTML (404 page), this will throw the error we saw
+
+                if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+
+                const data = await res.json();
+
+                alert(data.status);
+
+                currentLeader = "1";
+
+                location.reload(); // Refresh to show the empty vault
+
+            } catch (e) {
+
+                alert("Purge Failed: Engine Offline.");
+
+            }
+
         }
+
+    
+
+
 
         // Initialize board on load
     updateDisplayBoard(); // Initial load
