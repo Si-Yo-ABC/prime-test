@@ -4,314 +4,200 @@
     <title>Dragon Engine Test</title>
     <style>
         body {
-    background-color: #0d1117;
-    color: #c9d1d9;
-    font-family: 'Courier New', Courier, monospace;
-    line-height: 1.6;
-}
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Courier New', Courier, monospace;
+            line-height: 1.6;
+        }
 
-.container {
-    max-width: 1100px;
-    margin: auto;
-    padding: 20px;
-}
+        .container {
+            max-width: 1100px;
+            margin: auto;
+            padding: 20px;
+        }
 
-.panel {
-    background: #161b22;
-    border: 1px solid #30363d;
-    border-radius: 6px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-}
+        .panel {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
 
-h3 {
-    color: #58a6ff;
-    border-bottom: 1px solid #30363d;
-    padding-bottom: 10px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-}
+        h3 {
+            color: #58a6ff;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
 
-input, select {
-    background: #0d1117;
-    border: 1px solid #30363d;
-    color: #58a6ff;
-    padding: 10px;
-    border-radius: 4px;
-    font-family: inherit;
-}
+        input, select {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            color: #58a6ff;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: inherit;
+        }
 
-/* The Navigation Buttons */
-.btn-teleport { background: #238636; color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 4px; }
-.btn-ignite { background: #1f6feb; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; }
-.btn-purge { background: #da3633; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; font-size: 0.8em; }
+        .btn-teleport { background: #238636; color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 4px; }
+        .btn-ignite { background: #1f6feb; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; }
+        .btn-purge { background: #da3633; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; font-size: 0.8em; }
 
-/* The Bifurcation Alert */
-#seed-panel {
-    border: 1px solid #d29922;
-    background: rgba(210, 153, 34, 0.1);
-    animation: pulse 2s infinite;
-}
+        .prime-card {
+            border-left: 4px solid #58a6ff;
+            background: #161b22;
+            padding: 20px;
+            border-radius: 0 6px 6px 0;
+        }
 
-@keyframes pulse {
-    0% { border-color: #d29922; }
-    50% { border-color: #f0883e; }
-    100% { border-color: #d29922; }
-}
-
-.prime-card {
-    border-left: 4px solid #58a6ff;
-    background: #161b22;
-    padding: 20px;
-    border-radius: 0 6px 6px 0;
-}
-
-.value {
-    font-size: 1.5em;
-    color: #79c0ff;
-    display: block;
-    margin: 10px 0;
-    word-wrap: break-word;
-}
+        .value {
+            font-size: 1.5em;
+            color: #79c0ff;
+            display: block;
+            margin: 10px 0;
+            word-wrap: break-word;
+        }
     </style>
 </head>
+
 <body>
+
 <div class="panel">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h3 style="margin: 0;">Dragon Control Unit: Command Tower</h3>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h3 style="margin:0;">Dragon Control Unit: Command Tower</h3>
         <div>
-            <button onclick="downloadVault()" class="btn-download" style="background: #222; color: #00bcff; border: 1px solid #00bcff; padding: 5px 10px; cursor: pointer; border-radius: 4px;">LOGS</button>
-            <button onclick="purgeVault()" class="btn-purge" style="background: #222; color: #ff4444; border: 1px solid #ff4444; padding: 5px 10px; cursor: pointer; border-radius: 4px; margin-left: 5px;">PURGE</button>
+            <button onclick="downloadVault()" style="background:#222;color:#00bcff;border:1px solid #00bcff;padding:5px 10px;border-radius:4px;">LOGS</button>
+            <button onclick="purgeVault()" class="btn-purge" style="margin-left:5px;">PURGE</button>
         </div>
     </div>
-    
-    <div style="margin-bottom: 15px;">
-        <p style="color:#888; margin-bottom:5px;">[COORDINATES] Starting Prime ($p$)</p>
-        <input type="text" id="manual-p" placeholder="e.g. 104729" style="width: 100%;">
+
+    <p style="color:#888;">[COORDINATES] Starting Prime (p)</p>
+    <input type="text" id="manual-p" placeholder="e.g. 104729" style="width:100%;">
+
+    <div style="margin-top:15px;">
+        <p style="color:#ff8c00;">[GAPPING] Seed Prime (s)</p>
+        <input type="number" id="seed-p" value="2" style="width:100%;">
+        <small style="color:#555;">Required for JUMP; ignored for CRAWL.</small>
     </div>
 
-    <div id="seed-input-area" style="margin-bottom: 15px; padding: 10px; background: #1a1a1a; border-radius: 5px; border: 1px solid #333;">
-        <p style="color:#ff8c00; margin-top:0; font-size: 0.9em;">[GAPPING] Seed Prime ($s$)</p>
-        <input type="number" id="seed-p" placeholder="Seed for Gaps/Resonance" value="2" style="width: 100%;">
-        <small style="color: #555;">Required for JUMP; ignored for CRAWL unless hitting beacons.</small>
-    </div>
+    <p style="color:#888;margin-top:15px;">[ITERATIONS] Loop Count</p>
+    <input type="number" id="jump-count" value="1" min="1">
 
-    <div style="margin-bottom: 20px;">
-        <p style="color:#888; margin-bottom:5px;">[ITERATIONS] Loop Count</p>
-        <input type="number" id="jump-count" value="1" min="1" style="width: 80px;">
-    </div>
-
-    <div style="margin-bottom: 20px;">
+    <div style="margin-top:20px;">
         <button onclick="action('jump')" class="btn-teleport">JUMP (LEAPER)</button>
         <button onclick="action('next')" class="btn-ignite">CRAWL (CRAWLER)</button>
-    </div>    
+    </div>
 </div>
-<div class="panel" id="prey-board-container">
+
+<div class="panel">
     <h3>PREY BOARD (Leaderboard)</h3>
-    <div id="results-display" style="margin-top: 20px; min-height: 50px;"></div>
+    <div id="results-display"></div>
     <div id="prey-board-list">Loading records...</div>
 </div>
+
 <script>
-        // --- CONFIGURATION ---
-            // We know this works because you tested it in the browser!
-            //const API_URL = "https://si-yo-abc-prime-generator-api.hf.space/generate";
-            //si-yo-abc/prime-generator-api
-            const API_URL = "https://si-yo-abc-prime-generator-api.hf.space"; 
-            // We split the token so GitHub doesn't "see" it and kill it
-            const partA = "hf_"; 
-            const partB = "dIhTAgaiHTPBRDcQBHnBzQHbVfttaGkQdI"; // Paste everything AFTER hf_ here
     
-            const TOKEN = partA + partB; 
-        // --------------------- 
-    let currentLeader = "";
+    // --- CONFIGURATION ---
+        // We know this works because you tested it in the browser!
+        //const API_URL = "https://si-yo-abc-prime-generator-api.hf.space/generate";
+        //si-yo-abc/prime-generator-api
+        const API_URL = "https://si-yo-abc-prime-generator-api.hf.space"; 
+        // We split the token so GitHub doesn't "see" it and kill it
+        const partA = "hf_"; 
+        const partB = "dIhTAgaiHTPBRDcQBHnBzQHbVfttaGkQdI"; // Paste everything AFTER hf_ here
+
+        const TOKEN = partA + partB; 
+    // --------------------- 
 
     async function action(actionType) {
-    const pStart = document.getElementById('manual-p').value;
-    const sSeed = document.getElementById('seed-p').value;
-    const loopCount = document.getElementById('jump-count').value || 1;
-    const display = document.getElementById('results-display');
+        const pStart = document.getElementById('manual-p').value || "3";
+        const sSeed = document.getElementById('seed-p').value || "2";
+        const loops = document.getElementById('jump-count').value || 1;
+        const display = document.getElementById('results-display');
 
-    // Validation: Jump requires a Seed Prime
-    if (actionType === 'jump' && !sSeed) {
-        alert("The Leaper requires a Seed Prime to calculate gaps and resonance.");
-        return;
-    }
+        if (actionType === "jump" && !sSeed) {
+            alert("Seed Prime required for jump.");
+            return;
+        }
 
-    display.innerHTML = `<h2 style="color: #ff8c00">Executing ${actionType.toUpperCase()} Sequence...</h2>`;
+        display.innerHTML = `<p style="color:#ff8c00;">Executing ${actionType.toUpperCase()}...</p>`;
 
-    try {
-        // Constructing the URL with all 4 necessary data points
         const params = new URLSearchParams({
-            current_p: pStart || "3",
-            p_branch: sSeed || "2", // This is your 's'
-            jumps: loopCount,
-            button_clicked: actionType // This tells Python which function to run
+            current_p: pStart,
+            p_branch: sSeed,
+            jumps: loops,
+            button_clicked: actionType
         });
 
-        const response = await fetch(`${API_URL}/generate?${params.toString()}`, {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${TOKEN}` }
+        const res = await fetch(`${API_URL}/generate?${params.toString()}`, {
+            headers: { Authorization: `Bearer ${TOKEN}` }
         });
-        
-        const data = await response.json();
+
+        const data = await res.json();
 
         if (data.status === "success") {
-            // Update the Starting Point input so the next click continues from where we landed
             document.getElementById('manual-p').value = data.new_start_p;
-            
-            // Map the history results into the display area
+
             display.innerHTML = data.history.map(item => `
-                <div class="result-entry" style="border-left: 4px solid ${item.is_prime ? '#00bcff' : '#ff4444'}; padding: 10px; margin-bottom: 5px; background: #111;">
-                    <strong>${item.is_prime ? 'PRIME FOUND' : 'COMPOSITE'}</strong>: ${item.val}
-                    <br><small>Method: ${item.algo || actionType} | Hits: ${item.hits ? item.hits.length : 0}</small>
+                <div style="border-left:4px solid #00bcff;padding:10px;margin-bottom:5px;background:#111;">
+                    <strong>PRIME FOUND</strong>: ${item.val}<br>
+                    <small>Method: ${item.method}</small>
                 </div>
-            `).join('');
-            
+            `).join("");
+
             updateDisplayBoard();
         }
-    } catch (err) {
-        display.innerHTML = `<p style="color:red">Transmission Error: ${err.message}</p>`;
-    }
-}
-        
-    function renderResultCard(item) {
-        // 'item' comes from the 'history' array in your Python return
-        const isPrime = item.is_prime;
-        const color = isPrime ? "#00bcff" : "#ff4444";
-        const label = isPrime ? "TARGET NEUTRALIZED (C2)" : "C7 GROUND IDENTIFIED";
-
-        return `
-            <div class="prime-card" style="border-left: 5px solid ${color}; margin-bottom: 10px; background: #111; padding: 15px;">
-                <h3 style="color: ${color}; margin: 0;">${label}</h3>
-                <span class="value" style="word-break: break-all; font-family: monospace; color: white;">${item.val}</span>
-                <div class="stat-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px; font-size: 0.8em;">
-                    <div class="stat-item"><span style="color:#888">METHOD:</span> ${item.algo || 'Crawler'}</div>
-                    <div class="stat-item"><span style="color:#888">HITS:</span> ${item.hits ? item.hits.length : 0} Beacons</div>
-                    <div class="stat-item"><span style="color:#888">STATUS:</span> ${item.status || 'Verified'}</div>
-                </div>
-            </div>`;
     }
 
     async function updateDisplayBoard() {
-        try {
         const res = await fetch(`${API_URL}/display_board`, {
-            headers: { 'Authorization': `Bearer ${TOKEN}` }
+            headers: { Authorization: `Bearer ${TOKEN}` }
         });
-        
-        if (!res.ok) throw new Error("Server Response Error");
 
         const data = await res.json();
         const list = document.getElementById('prey-board-list');
-        
+
         if (!data || data.length === 0) {
-            list.innerHTML = "<div style='color:#666; padding:10px;'>[WAITING FOR DISCOVERY...]</div>";
+            list.innerHTML = "<p style='color:#666;'>No records yet.</p>";
             return;
         }
-        
+
         list.innerHTML = data.map(r => `
-            <div style="border-bottom:1px solid #333; padding:8px; font-size:0.9em; display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: #00bcff; font-family: monospace;">${r.value.length > 15 ? r.value.substring(0,15) + '...' : r.value}</span>
-                <span style="color: #888; font-size: 0.8em;">[${r.method}]</span>
-                <span style="color: #ff8c00; font-weight: bold;">${r.beacons} Hits</span>
+            <div style="border-bottom:1px solid #333;padding:8px;display:flex;justify-content:space-between;">
+                <span style="color:#00bcff;">${r.value}</span>
+                <span>[${r.method}]</span>
+                <span style="color:#ff8c00;">${r.beacons} hits</span>
             </div>
-        `).join('');
-    } catch (e) { 
-        console.error("Leaderboard Sync Failed:", e);
-        document.getElementById('prey-board-list').innerHTML = "<div style='color:red;'>Leaderboard Offline</div>";
+        `).join("");
     }
-} 
-    
-        // --- 1. Download Vault(solving the mystery) ---
 
-        async function downloadVault() {
-    console.log("Requesting Harvest from Vault...");
-    try {
-        const response = await fetch(`${API_URL}/download_vault`, {
-            method: 'GET',
-            headers: { 
-                'Authorization': `Bearer ${TOKEN}`
-            }
+    async function downloadVault() {
+        const res = await fetch(`${API_URL}/download_vault`, {
+            headers: { Authorization: `Bearer ${TOKEN}` }
         });
-
-        if (!response.ok) throw new Error(`Server responded with ${response.status}`);
-
-        // 1. Take the response and turn it into a Blob (Binary Large Object)
-        const blob = await response.blob();
-
-        // 2. Create a virtual URL for this file
-        const url = window.URL.createObjectURL(blob);
-
-        // 3. Create a hidden link and click it automatically
-        const a = document.createElement('a');
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
         a.href = url;
-        a.download = `dragon_prime_harvest_${new Date().toISOString().slice(0,10)}.csv`;
-        document.body.appendChild(a);
+        a.download = `prime_harvest_${new Date().toISOString().slice(0,10)}.csv`;
         a.click();
-
-        // 4. Cleanup memory
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        
-        console.log("Harvest saved successfully.");
-    } catch (err) {
-        console.error("Download failed:", err);
-        alert("Download Failed: " + err.message);
+        URL.revokeObjectURL(url);
     }
-}
 
-    
+    async function purgeVault() {
+        const pw = prompt("Enter purge password:");
+        if (!pw) return;
+        await fetch(`${API_URL}/purge_memory?password=${pw}`, {
+            headers: { Authorization: `Bearer ${TOKEN}` }
+        });
+        location.reload();
+    }
 
-        // --- 2. THE PURGE (CLEAN SLATE) --- PURGE MUST UNCHANGED
+    updateDisplayBoard();
+</script>
 
-        async function purgeVault() {
-
-            const pw = prompt("Enter Dragon Command Password to Wipe Database:");
-
-            if (!pw) return;
-
-    
-
-            try {
-
-                // Added a safety check to make sure API_URL doesn't end in a slash
-
-                const cleanUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
-
-                const res = await fetch(`${cleanUrl}/purge_memory?password=${pw}`, {
-
-                    method: 'GET',
-
-                    headers: { 'Authorization': `Bearer ${TOKEN}` }
-
-                });
-
-                // If the response is HTML (404 page), this will throw the error we saw
-
-                if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
-
-                const data = await res.json();
-
-                alert(data.status);
-
-                currentLeader = "1";
-
-                location.reload(); // Refresh to show the empty vault
-
-            } catch (e) {
-
-                alert("Purge Failed: Engine Offline.");
-
-            }
-
-        }
-
-    
-
-
-
-        // Initialize board on load
-    updateDisplayBoard(); // Initial load
-    </script>
 </body>
 </html>
