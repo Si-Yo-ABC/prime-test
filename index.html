@@ -184,6 +184,22 @@
             color: #8b949e;
             font-size: 0.9em;
         }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .status-online {
+            background-color: #238636;
+        }
+        
+        .status-offline {
+            background-color: #da3633;
+        }
     </style>
 </head>
 <body>
@@ -208,15 +224,22 @@
                 </div>
             </div>
             
-            <div style="margin-top: 20px; display: flex; gap: 10px;">
-                <button onclick="generatePrimes()" style="flex: 1;">Generate Primes</button>
-                <button onclick="initializeSystem()" style="background: #1f6feb;">Initialize</button>
-                <button onclick="downloadData()" style="background: #8957e5;">Download Data</button>
-                <button onclick="showPurge()" class="danger">Purge Database</button>
+            <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button onclick="generatePrimes()" style="flex: 1; min-width: 150px;">Generate Primes</button>
+                <button onclick="initializeSystem()" style="background: #1f6feb; min-width: 120px;">Initialize</button>
+                <button onclick="downloadData()" style="background: #8957e5; min-width: 120px;">Download Data</button>
+                <button onclick="showPurge()" class="danger" style="min-width: 120px;">Purge Database</button>
             </div>
             
             <div id="loading" class="loading">
                 <div>Generating primes... This may take a moment.</div>
+            </div>
+            
+            <div style="margin-top: 15px; padding: 10px; background: #0d1117; border-radius: 6px; border: 1px solid #30363d;">
+                <div style="display: flex; align-items: center;">
+                    <span class="status-indicator" id="api-status-indicator"></span>
+                    <span id="api-status-text">Checking API status...</span>
+                </div>
             </div>
         </div>
 
@@ -250,7 +273,7 @@
         <div class="footer">
             <div>Markov Prime Generator v1.0 | Using constraint learning for efficient prime generation</div>
             <div style="margin-top: 10px; font-size: 0.8em;">
-                API Status: <span id="api-status" style="color: #238636;">Connected</span>
+                API: <span id="api-url-display" style="color: #58a6ff;"></span>
             </div>
         </div>
     </div>
@@ -269,19 +292,63 @@
         const TOKEN = partA + partB; 
     // --------------------- 
 
-    const API_BASE = window.location.origin;
-
-     async function generatePrimes() {
+    // Display API URL
+        document.getElementById('api-url-display').textContent = API_URL;
+        
+        // Common fetch function with token
+        async function apiFetch(endpoint, params = {}) {
+            const url = new URL(`${API_URL}${endpoint}`);
+            Object.keys(params).forEach(key => {
+                if (params[key] !== undefined && params[key] !== null) {
+                    url.searchParams.append(key, params[key]);
+                }
+            });
+            
+            const response = await fetch(url.toString(), {
+                headers: { 
+                    Authorization: `Bearer ${TOKEN}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+            
+            return response.json();
+        }
+        
+        // Check API status
+        async function checkApiStatus() {
+            const indicator = document.getElementById('api-status-indicator');
+            const statusText = document.getElementById('api-status-text');
+            
+            try {
+                const response = await fetch(`${API_URL}/status`, {
+                    headers: { Authorization: `Bearer ${TOKEN}` }
+                });
+                
+                if (response.ok) {
+                    indicator.className = 'status-indicator status-online';
+                    statusText.textContent = 'API Online';
+                } else {
+                    indicator.className = 'status-indicator status-offline';
+                    statusText.textContent = 'API Offline';
+                }
+            } catch (error) {
+                indicator.className = 'status-indicator status-offline';
+                statusText.textContent = 'API Connection Failed';
+            }
+        }
+        
+        async function generatePrimes() {
             const count = document.getElementById('count').value;
             const method = document.getElementById('method').value;
             
             document.getElementById('loading').classList.add('active');
             
             try {
-                const response = await fetch(`${API_BASE}/generate?count=${count}&method=${method}`, {
-            headers: { Authorization: `Bearer ${TOKEN}` }
-        });
-                const data = await response.json();
+                const data = await apiFetch('/generate', { count, method });
                 
                 if (data.status === 'success') {
                     displayResults(data.history);
@@ -292,6 +359,7 @@
                 }
             } catch (error) {
                 alert('Network error: ' + error.message);
+                console.error('Generation error:', error);
             } finally {
                 document.getElementById('loading').classList.remove('active');
             }
@@ -324,10 +392,7 @@
         
         async function updateLeaderboard() {
             try {
-                const response = await fetch(`${API_BASE}/display_board?limit=10`, {
-            headers: { Authorization: `Bearer ${TOKEN}` }
-        });
-                const data = await response.json();
+                const data = await apiFetch('/display_board', { limit: 10 });
                 
                 const container = document.getElementById('leaderboard');
                 container.innerHTML = '';
@@ -354,15 +419,14 @@
                 });
             } catch (error) {
                 console.error('Error updating leaderboard:', error);
+                const container = document.getElementById('leaderboard');
+                container.innerHTML = `<div class="result-item failure">Error loading leaderboard: ${error.message}</div>`;
             }
         }
         
         async function updateStats() {
             try {
-                const response = await fetch(`${API_BASE}/markov_stats`, {
-            headers: { Authorization: `Bearer ${TOKEN}` }
-        });
-                const data = await response.json();
+                const data = await apiFetch('/markov_stats');
                 
                 const container = document.getElementById('stats');
                 
@@ -382,16 +446,18 @@
                 
             } catch (error) {
                 console.error('Error updating stats:', error);
+                const container = document.getElementById('stats');
+                container.innerHTML = `<div class="stat-box">
+                    <div class="stat-value">Error</div>
+                    <div class="stat-label">Failed to load stats</div>
+                </div>`;
             }
         }
         
         async function initializeSystem() {
-            if (confirm('Initialize with base primes? This will add 2, 3, 5, 7, etc.')) {
+            if (confirm('Initialize with base primes? This will add 2, 3, 5, etc.')) {
                 try {
-                    const response = await fetch(`${API_BASE}/initialize`, {
-            headers: { Authorization: `Bearer ${TOKEN}` }
-        });
-                    const data = await response.json();
+                    const data = await apiFetch('/initialize');
                     alert(data.message || 'Initialized successfully');
                     updateLeaderboard();
                     updateStats();
@@ -400,6 +466,7 @@
                 }
             }
         }
+        
 
     async function downloadVault() {
         const res = await fetch(`${API_URL}/download_vault`, {
@@ -414,14 +481,15 @@
         URL.revokeObjectURL(url);
     }
 
-    async function purgeVault() {
-        const pw = prompt("Enter purge password:");
-        if (!pw) return;
-        await fetch(`${API_URL}/purge_memory?password=${pw}`, {
-            headers: { Authorization: `Bearer ${TOKEN}` }
+     // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkApiStatus();
+            updateLeaderboard();
+            updateStats();
+            
+            // Check API status every 30 seconds
+            setInterval(checkApiStatus, 30000);
         });
-        location.reload();
-    }
 
     // Initialize on load
         document.addEventListener('DOMContentLoaded', function() {
