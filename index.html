@@ -371,7 +371,7 @@
         
         async function updateLeaderboard() {
             try {
-                const data = await fetch(`${API_URL}/display_board`, { limit: 10 }, {
+                const data = await fetch(`${API_URL}/display_board?limit=10`, {
             headers: { Authorization: `Bearer ${TOKEN}` }
         });
                 
