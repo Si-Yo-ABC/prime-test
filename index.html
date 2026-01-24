@@ -325,7 +325,7 @@
             document.getElementById('loading').classList.add('active');
             
             try {
-                const data = await Fetch('/generate', { count, method }, {
+                const data = await fetch('/generate', { count, method }, {
             headers: { Authorization: `Bearer ${TOKEN}` }
         });
                 
@@ -371,7 +371,7 @@
         
         async function updateLeaderboard() {
             try {
-                const data = await Fetch('/display_board', { limit: 10 }, {
+                const data = await fetch('/display_board', { limit: 10 }, {
             headers: { Authorization: `Bearer ${TOKEN}` }
         });
                 
@@ -407,7 +407,7 @@
         
         async function updateStats() {
             try {
-                const data = await Fetch('/markov_stats', {
+                const data = await fetch('/markov_stats', {
             headers: { Authorization: `Bearer ${TOKEN}` }
         });
                 
@@ -440,7 +440,7 @@
         async function initializeSystem() {
             if (confirm('Initialize with base primes? This will add 2, 3, 5, etc.')) {
                 try {
-                    const data = await Fetch('/initialize', {
+                    const data = await fetch('/initialize', {
             headers: { Authorization: `Bearer ${TOKEN}` }
         });
                     alert(data.message || 'Initialized successfully');
