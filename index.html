@@ -1,102 +1,259 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Dragon Engine Test</title>
+    <title>Markov Prime Generator</title>
     <style>
         body {
             background-color: #0d1117;
             color: #c9d1d9;
             font-family: 'Courier New', Courier, monospace;
             line-height: 1.6;
+            margin: 0;
+            padding: 20px;
         }
 
         .container {
-            max-width: 1100px;
-            margin: auto;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
             padding: 20px;
+            border-bottom: 2px solid #30363d;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #58a6ff;
+            margin: 0;
+            font-size: 2.5em;
+        }
+
+        .header .subtitle {
+            color: #8b949e;
+            margin-top: 10px;
         }
 
         .panel {
             background: #161b22;
             border: 1px solid #30363d;
-            border-radius: 6px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
 
-        h3 {
+        .panel h3 {
             color: #58a6ff;
             border-bottom: 1px solid #30363d;
-            padding-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            padding-bottom: 15px;
+            margin-top: 0;
+            font-size: 1.3em;
         }
 
-        input, select {
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .control-group label {
+            color: #8b949e;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+
+        input, select, button {
             background: #0d1117;
             border: 1px solid #30363d;
             color: #58a6ff;
-            padding: 10px;
-            border-radius: 4px;
+            padding: 12px;
+            border-radius: 6px;
             font-family: inherit;
+            font-size: 1em;
         }
 
-        .btn-teleport { background: #238636; color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 4px; }
-        .btn-ignite { background: #1f6feb; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; }
-        .btn-purge { background: #da3633; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; font-size: 0.8em; }
+        button {
+            background: #238636;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
 
-        .prime-card {
-            border-left: 4px solid #58a6ff;
+        button:hover {
+            background: #2ea043;
+        }
+
+        button.danger {
+            background: #da3633;
+        }
+
+        button.danger:hover {
+            background: #f85149;
+        }
+
+        .results {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .result-item {
+            padding: 12px;
+            margin: 8px 0;
             background: #161b22;
-            padding: 20px;
-            border-radius: 0 6px 6px 0;
+            border-left: 4px solid #58a6ff;
+            border-radius: 4px;
         }
 
-        .value {
-            font-size: 1.5em;
+        .result-item.success {
+            border-left-color: #238636;
+        }
+
+        .result-item.failure {
+            border-left-color: #da3633;
+        }
+
+        .prime-value {
+            font-size: 1.2em;
             color: #79c0ff;
+            font-weight: bold;
+            word-break: break-all;
+        }
+
+        .prime-meta {
+            color: #8b949e;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-box {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            color: #58a6ff;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            color: #8b949e;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #58a6ff;
+        }
+
+        .loading.active {
             display: block;
-            margin: 10px 0;
-            word-wrap: break-word;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #30363d;
+            color: #8b949e;
+            font-size: 0.9em;
         }
     </style>
 </head>
-
 <body>
+    <div class="container">
+        <div class="header">
+            <h1>Markov Prime Generator</h1>
+            <div class="subtitle">Generating primes through learned constraints</div>
+        </div>
 
-<div class="panel">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <h3 style="margin:0;">Dragon Control Unit: Command Tower</h3>
-        <div>
-            <button onclick="downloadVault()" style="background:#222;color:#00bcff;border:1px solid #00bcff;padding:5px 10px;border-radius:4px;">LOGS</button>
-            <button onclick="purgeVault()" class="btn-purge" style="margin-left:5px;">PURGE</button>
+        <div class="panel">
+            <h3>Control Panel</h3>
+            <div class="controls">
+                <div class="control-group">
+                    <label>Number of Primes to Generate:</label>
+                    <input type="number" id="count" value="1" min="1" max="100">
+                </div>
+                <div class="control-group">
+                    <label>Generation Method:</label>
+                    <select id="method">
+                        <option value="markov">Markov Chain (2p+k)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button onclick="generatePrimes()" style="flex: 1;">Generate Primes</button>
+                <button onclick="initializeSystem()" style="background: #1f6feb;">Initialize</button>
+                <button onclick="downloadData()" style="background: #8957e5;">Download Data</button>
+                <button onclick="showPurge()" class="danger">Purge Database</button>
+            </div>
+            
+            <div id="loading" class="loading">
+                <div>Generating primes... This may take a moment.</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>Latest Results</h3>
+            <div id="results" class="results">
+                <!-- Results will appear here -->
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>Statistics</h3>
+            <div id="stats" class="stats-grid">
+                <!-- Stats will appear here -->
+            </div>
+            <div style="margin-top: 15px;">
+                <button onclick="updateStats()" style="width: 100%;">Refresh Statistics</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>Recent Primes</h3>
+            <div id="leaderboard" class="results">
+                <!-- Leaderboard will appear here -->
+            </div>
+            <div style="margin-top: 15px;">
+                <button onclick="updateLeaderboard()" style="width: 100%;">Refresh Leaderboard</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div>Markov Prime Generator v1.0 | Using constraint learning for efficient prime generation</div>
+            <div style="margin-top: 10px; font-size: 0.8em;">
+                API Status: <span id="api-status" style="color: #238636;">Connected</span>
+            </div>
         </div>
     </div>
-
-    <p style="color:#888;">[COORDINATES] Starting Prime (p)</p>
-    <input type="text" id="manual-p" placeholder="e.g. 104729" style="width:100%;">
-
-    <div style="margin-top:15px;">
-        <p style="color:#ff8c00;">[GAPPING] Seed Prime (s)</p>
-        <input type="number" id="seed-p" value="2" style="width:100%;">
-        <small style="color:#555;">Required for JUMP; ignored for CRAWL.</small>
-    </div>
-
-    <p style="color:#888;margin-top:15px;">[ITERATIONS] Loop Count</p>
-    <input type="number" id="jump-count" value="1" min="1">
-
-    <div style="margin-top:20px;">
-        <button onclick="action('jump')" class="btn-teleport">JUMP (LEAPER)</button>
-        <button onclick="action('next')" class="btn-ignite">CRAWL (CRAWLER)</button>
-    </div>
-</div>
-
-<div class="panel">
-    <h3>PREY BOARD (Leaderboard)</h3>
-    <div id="results-display"></div>
-    <div id="prey-board-list">Loading records...</div>
-</div>
 
 <script>
     
@@ -112,67 +269,135 @@
         const TOKEN = partA + partB; 
     // --------------------- 
 
-    async function action(actionType) {
-        const pStart = document.getElementById('manual-p').value || "3";
-        const sSeed = document.getElementById('seed-p').value || "2";
-        const loops = document.getElementById('jump-count').value || 1;
-        const display = document.getElementById('results-display');
-
-        if (actionType === "jump" && !sSeed) {
-            alert("Seed Prime required for jump.");
-            return;
-        }
-
-        display.innerHTML = `<p style="color:#ff8c00;">Executing ${actionType.toUpperCase()}...</p>`;
-
-        const params = new URLSearchParams({
-            current_p: pStart,
-            p_branch: sSeed,
-            jumps: loops,
-            button_clicked: actionType
-        });
-
-        const res = await fetch(`${API_URL}/generate?${params.toString()}`, {
+     async function generatePrimes() {
+            const count = document.getElementById('count').value;
+            const method = document.getElementById('method').value;
+            
+            document.getElementById('loading').classList.add('active');
+            
+            try {
+                const response = await fetch(`${API_BASE}/generate?count=${count}&method=${method}`, {
             headers: { Authorization: `Bearer ${TOKEN}` }
         });
-
-        const data = await res.json();
-
-        if (data.status === "success") {
-            document.getElementById('manual-p').value = data.new_start_p;
-
-            display.innerHTML = data.history.map(item => `
-                <div style="border-left:4px solid #00bcff;padding:10px;margin-bottom:5px;background:#111;">
-                    <strong>PRIME FOUND</strong>: ${item.val}<br>
-                    <small>Method: ${item.method}</small>
-                </div>
-            `).join("");
-
-            updateDisplayBoard();
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    displayResults(data.history);
+                    updateLeaderboard();
+                    updateStats();
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+            }
         }
-    }
-
-    async function updateDisplayBoard() {
-        const res = await fetch(`${API_URL}/display_board`, {
+        
+        function displayResults(history) {
+            const container = document.getElementById('results');
+            container.innerHTML = '';
+            
+            if (!history || history.length === 0) {
+                container.innerHTML = '<div class="result-item">No results yet</div>';
+                return;
+            }
+            
+            history.forEach(item => {
+                const div = document.createElement('div');
+                div.className = `result-item ${item.is_prime ? 'success' : 'failure'}`;
+                
+                div.innerHTML = `
+                    <div class="prime-value">${item.val}</div>
+                    <div class="prime-meta">
+                        Method: ${item.method} | 
+                        Status: ${item.is_prime ? 'Prime ✓' : 'Composite (Learning)'}
+                    </div>
+                `;
+                
+                container.prepend(div);
+            });
+        }
+        
+        async function updateLeaderboard() {
+            try {
+                const response = await fetch(`${API_BASE}/display_board?limit=10`, {
             headers: { Authorization: `Bearer ${TOKEN}` }
         });
-
-        const data = await res.json();
-        const list = document.getElementById('prey-board-list');
-
-        if (!data || data.length === 0) {
-            list.innerHTML = "<p style='color:#666;'>No records yet.</p>";
-            return;
+                const data = await response.json();
+                
+                const container = document.getElementById('leaderboard');
+                container.innerHTML = '';
+                
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div class="result-item">No primes generated yet</div>';
+                    return;
+                }
+                
+                data.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'result-item success';
+                    
+                    div.innerHTML = `
+                        <div class="prime-value">${item.value}</div>
+                        <div class="prime-meta">
+                            Source: ${item.source} | 
+                            Offset: ${item.offset} | 
+                            Method: ${item.method}
+                        </div>
+                    `;
+                    
+                    container.appendChild(div);
+                });
+            } catch (error) {
+                console.error('Error updating leaderboard:', error);
+            }
         }
-
-        list.innerHTML = data.map(r => `
-            <div style="border-bottom:1px solid #333;padding:8px;display:flex;justify-content:space-between;">
-                <span style="color:#00bcff;">${r.value}</span>
-                <span>[${r.method}]</span>
-                <span style="color:#ff8c00;">${r.beacons} hits</span>
-            </div>
-        `).join("");
-    }
+        
+        async function updateStats() {
+            try {
+                const response = await fetch(`${API_BASE}/markov_stats`, {
+            headers: { Authorization: `Bearer ${TOKEN}` }
+        });
+                const data = await response.json();
+                
+                const container = document.getElementById('stats');
+                
+                const stats = [
+                    { label: 'Total Primes', value: data.total_primes || 0 },
+                    { label: 'Constraints Learned', value: data.total_constraints || 0 },
+                    { label: 'Composites Analyzed', value: data.composites_analyzed || 0 },
+                    { label: 'Latest Prime', value: data.latest_prime || 'None' }
+                ];
+                
+                container.innerHTML = stats.map(stat => `
+                    <div class="stat-box">
+                        <div class="stat-value">${stat.value}</div>
+                        <div class="stat-label">${stat.label}</div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error updating stats:', error);
+            }
+        }
+        
+        async function initializeSystem() {
+            if (confirm('Initialize with base primes? This will add 2, 3, 5, 7, etc.')) {
+                try {
+                    const response = await fetch(`${API_BASE}/initialize`, {
+            headers: { Authorization: `Bearer ${TOKEN}` }
+        });
+                    const data = await response.json();
+                    alert(data.message || 'Initialized successfully');
+                    updateLeaderboard();
+                    updateStats();
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                }
+            }
+        }
 
     async function downloadVault() {
         const res = await fetch(`${API_URL}/download_vault`, {
