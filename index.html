@@ -295,29 +295,6 @@
     // Display API URL
         document.getElementById('api-url-display').textContent = API_URL;
         
-        // Common fetch function with token
-        async function apiFetch(endpoint, params = {}) {
-            const url = new URL(`${API_URL}${endpoint}`);
-            Object.keys(params).forEach(key => {
-                if (params[key] !== undefined && params[key] !== null) {
-                    url.searchParams.append(key, params[key]);
-                }
-            });
-            
-            const response = await fetch(url.toString(), {
-                headers: { 
-                    Authorization: `Bearer ${TOKEN}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`API error: ${response.status}`);
-            }
-            
-            return response.json();
-        }
-        
         // Check API status
         async function checkApiStatus() {
             const indicator = document.getElementById('api-status-indicator');
@@ -348,7 +325,9 @@
             document.getElementById('loading').classList.add('active');
             
             try {
-                const data = await apiFetch('/generate', { count, method });
+                const data = await Fetch('/generate', { count, method }, {
+            headers: { Authorization: `Bearer ${TOKEN}` }
+        });
                 
                 if (data.status === 'success') {
                     displayResults(data.history);
@@ -392,7 +371,9 @@
         
         async function updateLeaderboard() {
             try {
-                const data = await apiFetch('/display_board', { limit: 10 });
+                const data = await Fetch('/display_board', { limit: 10 }, {
+            headers: { Authorization: `Bearer ${TOKEN}` }
+        });
                 
                 const container = document.getElementById('leaderboard');
                 container.innerHTML = '';
@@ -426,7 +407,9 @@
         
         async function updateStats() {
             try {
-                const data = await apiFetch('/markov_stats');
+                const data = await Fetch('/markov_stats', {
+            headers: { Authorization: `Bearer ${TOKEN}` }
+        });
                 
                 const container = document.getElementById('stats');
                 
@@ -457,7 +440,9 @@
         async function initializeSystem() {
             if (confirm('Initialize with base primes? This will add 2, 3, 5, etc.')) {
                 try {
-                    const data = await apiFetch('/initialize');
+                    const data = await Fetch('/initialize', {
+            headers: { Authorization: `Bearer ${TOKEN}` }
+        });
                     alert(data.message || 'Initialized successfully');
                     updateLeaderboard();
                     updateStats();
