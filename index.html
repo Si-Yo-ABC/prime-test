@@ -423,7 +423,11 @@
         location.reload();
     }
 
-    updateDisplayBoard();
+    // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateLeaderboard();
+            updateStats();
+        });
 </script>
 
 </body>
