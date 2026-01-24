@@ -265,6 +265,7 @@
             <div id="leaderboard" class="results">
                 <!-- Leaderboard will appear here -->
             </div>
+            <input type="number" id="displayLimit" value="10" min="1" max="100">
             <div style="margin-top: 15px;">
                 <button onclick="updateLeaderboard()" style="width: 100%;">Refresh Leaderboard</button>
             </div>
@@ -294,6 +295,7 @@
 
     // Display API URL
         document.getElementById('api-url-display').textContent = API_URL;
+    const limit = document.getElementById('displayLimit').value;
         
         // Check API status
         async function checkApiStatus() {
@@ -319,30 +321,51 @@
         }
         
         async function generatePrimes() {
-            const count = document.getElementById('count').value;
+            // Read the number input and convert it from string → number
+            const count = Number(document.getElementById('count').value);
+        
+            // Read the selected generation method
             const method = document.getElementById('method').value;
-            
+        
+            // Show the loading indicator while the request runs
             document.getElementById('loading').classList.add('active');
-            
+        
             try {
-                const data = await fetch(`${API_URL}/generate`, { count, method }, {
-            headers: { Authorization: `Bearer ${TOKEN}` }
-        });
-                
+                // Build the URL with query parameters exactly as FastAPI expects
+                const response = await fetch(
+                    `${API_URL}/generate?count=${count}&method=${method}`,
+                    {
+                        method: "GET", // Explicitly state this is a GET request
+                        headers: {
+                            Authorization: `Bearer ${TOKEN}` // Pass auth token
+                        }
+                    }
+                );
+        
+                // Convert the HTTP response into usable JSON data
+                const data = await response.json();
+        
+                // Check backend success flag
                 if (data.status === 'success') {
+                    // Render newly generated primes
                     displayResults(data.history);
+        
+                    // Refresh UI sections that depend on new data
                     updateLeaderboard();
                     updateStats();
                 } else {
-                    alert('Error: ' + (data.error || 'Unknown error'));
+                    alert('Error: ' + (data.detail || 'Unknown error'));
                 }
             } catch (error) {
+                // Catch network or parsing failures
                 alert('Network error: ' + error.message);
                 console.error('Generation error:', error);
             } finally {
+                // Always hide the loading indicator
                 document.getElementById('loading').classList.remove('active');
             }
         }
+
         
         function displayResults(history) {
             const container = document.getElementById('results');
@@ -371,39 +394,59 @@
         
         async function updateLeaderboard() {
             try {
-                const data = await fetch(`${API_URL}/display_board?limit=10`, {
-            headers: { Authorization: `Bearer ${TOKEN}` }
-        });
-                
+                // Send GET request to fetch the latest primes (display only)
+                const response = await fetch(
+                    `${API_URL}/display_board?limit=${limit}`,
+                    {
+                        method: "GET", // Explicit GET request
+                        headers: {
+                            Authorization: `Bearer ${TOKEN}` // API authentication
+                        }
+                    }
+                );
+        
+                // Convert the HTTP response into JSON array
+                const data = await response.json();
+        
+                // Get the leaderboard container
                 const container = document.getElementById('leaderboard');
                 container.innerHTML = '';
-                
-                if (!data || data.length === 0) {
-                    container.innerHTML = '<div class="result-item">No primes generated yet</div>';
+        
+                // If no primes exist yet, show placeholder message
+                if (!Array.isArray(data) || data.length === 0) {
+                    container.innerHTML =
+                        '<div class="result-item">No primes generated yet</div>';
                     return;
                 }
-                
+        
+                // Render each prime entry returned by the API
                 data.forEach(item => {
                     const div = document.createElement('div');
                     div.className = 'result-item success';
-                    
+        
                     div.innerHTML = `
                         <div class="prime-value">${item.value}</div>
                         <div class="prime-meta">
-                            Source: ${item.source} | 
-                            Offset: ${item.offset} | 
+                            Source: ${item.source} |
+                            Offset: ${item.offset} |
                             Method: ${item.method}
                         </div>
                     `;
-                    
+        
                     container.appendChild(div);
                 });
             } catch (error) {
                 console.error('Error updating leaderboard:', error);
+        
                 const container = document.getElementById('leaderboard');
-                container.innerHTML = `<div class="result-item failure">Error loading leaderboard: ${error.message}</div>`;
+                container.innerHTML = `
+                    <div class="result-item failure">
+                        Error loading leaderboard: ${error.message}
+                    </div>
+                `;
             }
         }
+
         
         async function updateStats() {
             try {
