@@ -292,208 +292,207 @@
 
         const TOKEN = partA + partB; 
     // --------------------- 
-
-    // Display API URL
-        document.getElementById('api-url-display').textContent = API_URL;
-    const limit = document.getElementById('displayLimit').value;
+ // Display API URL
+    document.getElementById('api-url-display').textContent = API_URL;
+    
+    // Check API status
+    async function checkApiStatus() {
+        const indicator = document.getElementById('api-status-indicator');
+        const statusText = document.getElementById('api-status-text');
         
-        // Check API status
-        async function checkApiStatus() {
-            const indicator = document.getElementById('api-status-indicator');
-            const statusText = document.getElementById('api-status-text');
+        try {
+            const response = await fetch(`${API_URL}/status`, {
+                headers: { Authorization: `Bearer ${TOKEN}` }
+            });
             
-            try {
-                const response = await fetch(`${API_URL}/status`, {
-                    headers: { Authorization: `Bearer ${TOKEN}` }
-                });
-                
-                if (response.ok) {
-                    indicator.className = 'status-indicator status-online';
-                    statusText.textContent = 'API Online';
-                } else {
-                    indicator.className = 'status-indicator status-offline';
-                    statusText.textContent = 'API Offline';
-                }
-            } catch (error) {
+            if (response.ok) {
+                indicator.className = 'status-indicator status-online';
+                statusText.textContent = 'API Online';
+            } else {
                 indicator.className = 'status-indicator status-offline';
-                statusText.textContent = 'API Connection Failed';
+                statusText.textContent = 'API Offline';
             }
+        } catch (error) {
+            indicator.className = 'status-indicator status-offline';
+            statusText.textContent = 'API Connection Failed';
         }
+    }
+    
+    async function generatePrimes() {
+        const count = Number(document.getElementById('count').value);
+        const method = document.getElementById('method').value;
         
-        async function generatePrimes() {
-            // Read the number input and convert it from string → number
-            const count = Number(document.getElementById('count').value);
+        // Show loading indicator
+        document.getElementById('loading').classList.add('active');
         
-            // Read the selected generation method
-            const method = document.getElementById('method').value;
-        
-            // Show the loading indicator while the request runs
-            document.getElementById('loading').classList.add('active');
-        
-            try {
-                // Build the URL with query parameters exactly as FastAPI expects
-                const response = await fetch(
-                    `${API_URL}/generate?count=${count}&method=${method}`,
-                    {
-                        method: "GET", // Explicitly state this is a GET request
-                        headers: {
-                            Authorization: `Bearer ${TOKEN}` // Pass auth token
-                        }
+        try {
+            const response = await fetch(
+                `${API_URL}/generate?count=${count}&method=${method}`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${TOKEN}`
                     }
-                );
-        
-                // Convert the HTTP response into usable JSON data
-                const data = await response.json();
-        
-                // Check backend success flag
-                if (data.status === 'success') {
-                    // Render newly generated primes
-                    displayResults(data.history);
-        
-                    // Refresh UI sections that depend on new data
-                    updateLeaderboard();
-                    updateStats();
-                } else {
-                    alert('Error: ' + (data.detail || 'Unknown error'));
                 }
-            } catch (error) {
-                // Catch network or parsing failures
-                alert('Network error: ' + error.message);
-                console.error('Generation error:', error);
-            } finally {
-                // Always hide the loading indicator
-                document.getElementById('loading').classList.remove('active');
+            );
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                displayResults(data.history);
+                updateLeaderboard();
+                updateStats();
+            } else {
+                alert('Error: ' + (data.detail || 'Unknown error'));
+            }
+        } catch (error) {
+            alert('Network error: ' + error.message);
+            console.error('Generation error:', error);
+        } finally {
+            document.getElementById('loading').classList.remove('active');
         }
-
+    }
+    
+    function displayResults(history) {
+        const container = document.getElementById('results');
+        container.innerHTML = '';
         
-        function displayResults(history) {
-            const container = document.getElementById('results');
+        if (!history || history.length === 0) {
+            container.innerHTML = '<div class="result-item">No results yet</div>';
+            return;
+        }
+        
+        history.forEach(item => {
+            const div = document.createElement('div');
+            div.className = `result-item ${item.is_prime ? 'success' : 'failure'}`;
+            
+            div.innerHTML = `
+                <div class="prime-value">${item.val}</div>
+                <div class="prime-meta">
+                    Method: ${item.method} | 
+                    Status: ${item.is_prime ? 'Prime ✓' : 'Composite (Learning)'}
+                </div>
+            `;
+            
+            container.prepend(div);
+        });
+    }
+    
+    async function updateLeaderboard() {
+        try {
+            // Get the current limit value from the input field
+            const limit = document.getElementById('displayLimit').value;
+            
+            const response = await fetch(
+                `${API_URL}/display_board?limit=${limit}`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${TOKEN}`
+                    }
+                }
+            );
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            const container = document.getElementById('leaderboard');
             container.innerHTML = '';
             
-            if (!history || history.length === 0) {
-                container.innerHTML = '<div class="result-item">No results yet</div>';
+            if (!Array.isArray(data) || data.length === 0) {
+                container.innerHTML = '<div class="result-item">No primes generated yet</div>';
                 return;
             }
             
-            history.forEach(item => {
+            data.forEach(item => {
                 const div = document.createElement('div');
-                div.className = `result-item ${item.is_prime ? 'success' : 'failure'}`;
+                div.className = 'result-item success';
                 
                 div.innerHTML = `
-                    <div class="prime-value">${item.val}</div>
+                    <div class="prime-value">${item.value}</div>
                     <div class="prime-meta">
-                        Method: ${item.method} | 
-                        Status: ${item.is_prime ? 'Prime ✓' : 'Composite (Learning)'}
+                        Source: ${item.source} |
+                        Offset: ${item.offset} |
+                        Method: ${item.method}
                     </div>
                 `;
                 
-                container.prepend(div);
+                container.appendChild(div);
             });
+        } catch (error) {
+            console.error('Error updating leaderboard:', error);
+            const container = document.getElementById('leaderboard');
+            container.innerHTML = `
+                <div class="result-item failure">
+                    Error loading leaderboard: ${error.message}
+                </div>
+            `;
         }
-        
-        async function updateLeaderboard() {
+    }
+    
+    async function updateStats() {
+        try {
+            const response = await fetch(`${API_URL}/markov_stats`, {
+                headers: { Authorization: `Bearer ${TOKEN}` }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            const container = document.getElementById('stats');
+            
+            const stats = [
+                { label: 'Total Primes', value: data.total_primes || 0 },
+                { label: 'Constraints Learned', value: data.total_constraints || 0 },
+                { label: 'Composites Analyzed', value: data.composites_analyzed || 0 },
+                { label: 'Latest Prime', value: data.latest_prime || 'None' }
+            ];
+            
+            container.innerHTML = stats.map(stat => `
+                <div class="stat-box">
+                    <div class="stat-value">${stat.value}</div>
+                    <div class="stat-label">${stat.label}</div>
+                </div>
+            `).join('');
+            
+        } catch (error) {
+            console.error('Error updating stats:', error);
+            const container = document.getElementById('stats');
+            container.innerHTML = `<div class="stat-box">
+                <div class="stat-value">Error</div>
+                <div class="stat-label">Failed to load stats</div>
+            </div>`;
+        }
+    }
+    
+    async function initializeSystem() {
+        if (confirm('Initialize with base primes? This will add 2, 3, 5, etc.')) {
             try {
-                // Send GET request to fetch the latest primes (display only)
-                const response = await fetch(
-                    `${API_URL}/display_board?limit=${limit}`,
-                    {
-                        method: "GET", // Explicit GET request
-                        headers: {
-                            Authorization: `Bearer ${TOKEN}` // API authentication
-                        }
-                    }
-                );
-        
-                // Convert the HTTP response into JSON array
-                const data = await response.json();
-        
-                // Get the leaderboard container
-                const container = document.getElementById('leaderboard');
-                container.innerHTML = '';
-        
-                // If no primes exist yet, show placeholder message
-                if (!Array.isArray(data) || data.length === 0) {
-                    container.innerHTML =
-                        '<div class="result-item">No primes generated yet</div>';
-                    return;
-                }
-        
-                // Render each prime entry returned by the API
-                data.forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = 'result-item success';
-        
-                    div.innerHTML = `
-                        <div class="prime-value">${item.value}</div>
-                        <div class="prime-meta">
-                            Source: ${item.source} |
-                            Offset: ${item.offset} |
-                            Method: ${item.method}
-                        </div>
-                    `;
-        
-                    container.appendChild(div);
+                const response = await fetch(`${API_URL}/initialize`, {
+                    headers: { Authorization: `Bearer ${TOKEN}` }
                 });
-            } catch (error) {
-                console.error('Error updating leaderboard:', error);
-        
-                const container = document.getElementById('leaderboard');
-                container.innerHTML = `
-                    <div class="result-item failure">
-                        Error loading leaderboard: ${error.message}
-                    </div>
-                `;
-            }
-        }
-
-        
-        async function updateStats() {
-            try {
-                const data = await fetch(`${API_URL}/markov_stats`, {
-            headers: { Authorization: `Bearer ${TOKEN}` }
-        });
                 
-                const container = document.getElementById('stats');
-                
-                const stats = [
-                    { label: 'Total Primes', value: data.total_primes || 0 },
-                    { label: 'Constraints Learned', value: data.total_constraints || 0 },
-                    { label: 'Composites Analyzed', value: data.composites_analyzed || 0 },
-                    { label: 'Latest Prime', value: data.latest_prime || 'None' }
-                ];
-                
-                container.innerHTML = stats.map(stat => `
-                    <div class="stat-box">
-                        <div class="stat-value">${stat.value}</div>
-                        <div class="stat-label">${stat.label}</div>
-                    </div>
-                `).join('');
-                
-            } catch (error) {
-                console.error('Error updating stats:', error);
-                const container = document.getElementById('stats');
-                container.innerHTML = `<div class="stat-box">
-                    <div class="stat-value">Error</div>
-                    <div class="stat-label">Failed to load stats</div>
-                </div>`;
-            }
-        }
-        
-        async function initializeSystem() {
-            if (confirm('Initialize with base primes? This will add 2, 3, 5, etc.')) {
-                try {
-                    const data = await fetch(`${API_URL}/initialize`, {
-            headers: { Authorization: `Bearer ${TOKEN}` }
-        });
-                    alert(data.message || 'Initialized successfully');
-                    updateLeaderboard();
-                    updateStats();
-                } catch (error) {
-                    alert('Error: ' + error.message);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
+                
+                const data = await response.json();
+                alert(data.message || 'Initialized successfully');
+                updateLeaderboard();
+                updateStats();
+            } catch (error) {
+                alert('Error: ' + error.message);
             }
         }
+    }
     
     // ## Do not remove the below code between "####"    
     // ###############################################
@@ -522,20 +521,28 @@
    // ## Do not remove the above code between "####"
     
      // Initialize on load
-        document.addEventListener('DOMContentLoaded', function() {
-            checkApiStatus();
-            updateLeaderboard();
-            updateStats();
-            
-            // Check API status every 30 seconds
-            setInterval(checkApiStatus, 30000);
+    document.addEventListener('DOMContentLoaded', function() {
+        checkApiStatus();
+        updateLeaderboard();
+        updateStats();
+        
+        // Check API status every 30 seconds
+        setInterval(checkApiStatus, 30000);
+        
+        // Add event listener for Enter key in count input
+        document.getElementById('count').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                generatePrimes();
+            }
         });
-
-    // Initialize on load
-        document.addEventListener('DOMContentLoaded', function() {
-            updateLeaderboard();
-            updateStats();
+        
+        // Add event listener for Enter key in displayLimit input
+        document.getElementById('displayLimit').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                updateLeaderboard();
+            }
         });
+    });
 </script>
 
 </body>
