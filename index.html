@@ -231,6 +231,9 @@
                 <button onclick="initializeSystem()" style="background: #1f6feb; min-width: 120px;">Initialize</button>
                 <button onclick="downloadVault()" style="background: #8957e5; min-width: 120px;">Download Data</button>
                 <button onclick="purgeVault()" class="danger" style="min-width: 120px;">Purge Database</button>
+                <button onclick="generateDual()">Run Dual Pruning Experiment</button>
+                <button onclick="validatePruning()">Validate Pruning Subset</button>
+                <button onclick="checkExperimentStatus()">Check Experiment Status</button>
             </div>
             
             <div id="loading" class="loading">
@@ -492,6 +495,34 @@
                 }
             }
         }
+
+    async function generateDual() {
+        const count = document.getElementById('primeCount').value || 10;
+        const response = await fetch(`/generate_dual?count=${count}`, {
+                        headers: { Authorization: `Bearer ${TOKEN}` }
+                    });
+        const result = await response.json();
+        
+        // Display results
+        console.log("Experiment Results:", result.experiment_metrics);
+        displayResults(result);
+    }
+    
+    async function validatePruning() {
+        const response = await fetch('/validate_pruning', {
+                        headers: { Authorization: `Bearer ${TOKEN}` }
+                    });
+        const result = await response.json();
+        alert(JSON.stringify(result, null, 2));
+    }
+    
+    async function checkExperimentStatus() {
+        const response = await fetch('/experiment_status', {
+                        headers: { Authorization: `Bearer ${TOKEN}` }
+                    });
+        const result = await response.json();
+        console.log("Experiment Status:", result);
+    }
     
     // ## Do not remove the below code between "####"    
     // ###############################################
