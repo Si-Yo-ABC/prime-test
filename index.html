@@ -202,13 +202,94 @@
         .status-offline {
             background-color: #da3633;
         }
+
+        /* Validation specific styles */
+        .validation-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #1a1f2e;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+        }
+        
+        .validation-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .validation-buttons button {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .btn-test {
+            background: #007bff;
+        }
+        
+        .btn-test:hover {
+            background: #0056b3;
+        }
+        
+        .btn-validate {
+            background: #28a745;
+        }
+        
+        .btn-validate:hover {
+            background: #218838;
+        }
+        
+        .btn-explain {
+            background: #6f42c1;
+        }
+        
+        .btn-explain:hover {
+            background: #5a32a3;
+        }
+        
+        .validation-result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid;
+        }
+        
+        .validation-success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        
+        .validation-error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        
+        .validation-warning {
+            background: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+        
+        pre.validation-output {
+            background: #0d1117;
+            color: #79c0ff;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>Markov Prime Generator</h1>
-            <div class="subtitle">Generating primes through learned constraints</div>
+            <div class="subtitle">Generating primes through learned constraints • <span style="color:#79c0ff">Theory Validation System</span></div>
         </div>
 
         <div class="panel">
@@ -216,7 +297,7 @@
             <div class="controls">
                 <div class="control-group">
                     <label>Number of Primes to Generate:</label>
-                    <input type="number" id="count" value="1" min="1" max="100">
+                    <input type="number" id="count" value="1" min="1" max="50">
                 </div>
                 <div class="control-group">
                     <label>Generation Method:</label>
@@ -231,9 +312,30 @@
                 <button onclick="initializeSystem()" style="background: #1f6feb; min-width: 120px;">Initialize</button>
                 <button onclick="downloadVault()" style="background: #8957e5; min-width: 120px;">Download Data</button>
                 <button onclick="purgeVault()" class="danger" style="min-width: 120px;">Purge Database</button>
-                <button onclick="generateDual()">Run Dual Pruning Experiment</button>
-                <button onclick="validatePruning()">Validate Pruning Subset</button>
-                <button onclick="checkExperimentStatus()">Check Experiment Status</button>
+            </div>
+            
+            <!-- Validation Section -->
+            <div class="validation-section">
+                <h4 style="margin-top: 0; color: #58a6ff;">Theory Validation Tests</h4>
+                <p style="color: #8b949e; margin-bottom: 15px;">
+                    Test if empirical constraint learning is equivalent to functional rule: <code>k ≡ -2p (mod f)</code>
+                </p>
+                
+                <div class="validation-buttons">
+                    <button onclick="runPruningTest()" class="btn-test">
+                        Test Pruning Equivalence
+                    </button>
+                    <button onclick="validateAllConstraints()" class="btn-validate">
+                        Validate All Constraints
+                    </button>
+                    <button onclick="showExplanation()" class="btn-explain">
+                        View Explanation
+                    </button>
+                </div>
+                
+                <div id="validation-results" style="display: none;">
+                    <!-- Validation results will appear here -->
+                </div>
             </div>
             
             <div id="loading" class="loading">
@@ -296,151 +398,189 @@
 
         const TOKEN = partA + partB; 
     // --------------------- 
- // Display API URL
-     document.getElementById('api-url-display').textContent = API_URL;
+    // Display API URL
+    document.getElementById('api-url-display').textContent = API_URL;
         
-        // Check API status
-        async function checkApiStatus() {
-            const indicator = document.getElementById('api-status-indicator');
-            const statusText = document.getElementById('api-status-text');
+    // Check API status
+    async function checkApiStatus() {
+        const indicator = document.getElementById('api-status-indicator');
+        const statusText = document.getElementById('api-status-text');
+        
+        try {
+            const response = await fetch(`${API_URL}/status`, {
+                headers: { Authorization: `Bearer ${TOKEN}` }
+            });
             
-            try {
-                const response = await fetch(`${API_URL}/status`, {
-                    headers: { Authorization: `Bearer ${TOKEN}` }
-                });
-                
-                if (response.ok) {
-                    indicator.className = 'status-indicator status-online';
-                    statusText.textContent = 'API Online';
-                } else {
-                    indicator.className = 'status-indicator status-offline';
-                    statusText.textContent = 'API Offline';
-                }
-            } catch (error) {
+            if (response.ok) {
+                indicator.className = 'status-indicator status-online';
+                statusText.textContent = 'API Online';
+            } else {
                 indicator.className = 'status-indicator status-offline';
-                statusText.textContent = 'API Connection Failed';
+                statusText.textContent = 'API Offline';
             }
+        } catch (error) {
+            indicator.className = 'status-indicator status-offline';
+            statusText.textContent = 'API Connection Failed';
         }
+    }
+    
+    async function generatePrimes() {
+        const count = Number(document.getElementById('count').value);
         
-        async function generatePrimes() {
-            const count = Number(document.getElementById('count').value);
-            
-            // Show loading indicator
-            document.getElementById('loading').classList.add('active');
-            
-            try {
-                const response = await fetch(
-                    `${API_URL}/generate?count=${count}`,
-                    {
-                        method: "GET",
-                        headers: {
-                            Authorization: `Bearer ${TOKEN}`
-                        }
+        // Show loading indicator
+        document.getElementById('loading').classList.add('active');
+        
+        try {
+            const response = await fetch(
+                `${API_URL}/generate?count=${count}`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${TOKEN}`
                     }
-                );
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    displayResults(data.generated);
-                    updateLeaderboard();
-                    updateStats();
-                } else {
-                    alert('Error: ' + (data.detail || 'Unknown error'));
-                }
-            } catch (error) {
-                alert('Network error: ' + error.message);
-                console.error('Generation error:', error);
-            } finally {
-                document.getElementById('loading').classList.remove('active');
+            );
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                displayResults(data.generated);
+                updateLeaderboard();
+                updateStats();
+            } else {
+                alert('Error: ' + (data.detail || 'Unknown error'));
+            }
+        } catch (error) {
+            alert('Network error: ' + error.message);
+            console.error('Generation error:', error);
+        } finally {
+            document.getElementById('loading').classList.remove('active');
+        }
+    }
+    
+    function displayResults(primes) {
+        const container = document.getElementById('results');
+        container.innerHTML = '';
+        
+        if (!primes || primes.length === 0) {
+            container.innerHTML = '<div class="result-item">No primes generated in this batch</div>';
+            return;
         }
         
-        function displayResults(primes) {
-            const container = document.getElementById('results');
+        primes.forEach(prime => {
+            const div = document.createElement('div');
+            div.className = 'result-item success';
+            
+            div.innerHTML = `
+                <div class="prime-value">${prime}</div>
+                <div class="prime-meta">
+                    Status: Prime ✓ | 
+                    Generated via 2p+k
+                </div>
+            `;
+            
+            container.prepend(div);
+        });
+    }
+    
+    async function updateLeaderboard() {
+        try {
+            const limit = document.getElementById('displayLimit').value;
+            
+            const response = await fetch(
+                `${API_URL}/display_board?limit=${limit}`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${TOKEN}`
+                    }
+                }
+            );
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            const container = document.getElementById('leaderboard');
             container.innerHTML = '';
             
-            if (!primes || primes.length === 0) {
-                container.innerHTML = '<div class="result-item">No primes generated in this batch</div>';
+            if (!Array.isArray(data) || data.length === 0) {
+                container.innerHTML = '<div class="result-item">No primes generated yet</div>';
                 return;
             }
             
-            primes.forEach(prime => {
+            data.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'result-item success';
                 
                 div.innerHTML = `
-                    <div class="prime-value">${prime}</div>
+                    <div class="prime-value">${item.value}</div>
                     <div class="prime-meta">
-                        Status: Prime ✓ | 
-                        Generated via 2p+k
+                        Source: ${item.source} |
+                        Offset: ${item.offset} |
+                        Method: ${item.method}
                     </div>
                 `;
                 
-                container.prepend(div);
+                container.appendChild(div);
             });
+        } catch (error) {
+            console.error('Error updating leaderboard:', error);
+            const container = document.getElementById('leaderboard');
+            container.innerHTML = `
+                <div class="result-item failure">
+                    Error loading leaderboard: ${error.message}
+                </div>
+            `;
         }
-        
-        async function updateLeaderboard() {
-            try {
-                const limit = document.getElementById('displayLimit').value;
-                
-                const response = await fetch(
-                    `${API_URL}/display_board?limit=${limit}`,
-                    {
-                        method: "GET",
-                        headers: {
-                            Authorization: `Bearer ${TOKEN}`
-                        }
-                    }
-                );
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                const container = document.getElementById('leaderboard');
-                container.innerHTML = '';
-                
-                if (!Array.isArray(data) || data.length === 0) {
-                    container.innerHTML = '<div class="result-item">No primes generated yet</div>';
-                    return;
-                }
-                
-                data.forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = 'result-item success';
-                    
-                    div.innerHTML = `
-                        <div class="prime-value">${item.value}</div>
-                        <div class="prime-meta">
-                            Source: ${item.source} |
-                            Offset: ${item.offset} |
-                            Method: ${item.method}
-                        </div>
-                    `;
-                    
-                    container.appendChild(div);
-                });
-            } catch (error) {
-                console.error('Error updating leaderboard:', error);
-                const container = document.getElementById('leaderboard');
-                container.innerHTML = `
-                    <div class="result-item failure">
-                        Error loading leaderboard: ${error.message}
-                    </div>
-                `;
+    }
+    
+    async function updateStats() {
+        try {
+            const response = await fetch(`${API_URL}/markov_stats`, {
+                headers: { Authorization: `Bearer ${TOKEN}` }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            
+            const data = await response.json();
+            const container = document.getElementById('stats');
+            
+            const stats = [
+                { label: 'Total Primes', value: data.total_primes || 0 },
+                { label: 'Constraints Learned', value: data.total_constraints || 0 },
+                { label: 'Composites Analyzed', value: data.total_composite_analyses || 0 },
+                { label: 'Latest Prime', value: data.latest_prime || 'None' }
+            ];
+            
+            container.innerHTML = stats.map(stat => `
+                <div class="stat-box">
+                    <div class="stat-value">${stat.value}</div>
+                    <div class="stat-label">${stat.label}</div>
+                </div>
+            `).join('');
+            
+        } catch (error) {
+            console.error('Error updating stats:', error);
+            const container = document.getElementById('stats');
+            container.innerHTML = `<div class="stat-box">
+                <div class="stat-value">Error</div>
+                <div class="stat-label">Failed to load stats</div>
+            </div>`;
         }
-        
-        async function updateStats() {
+    }
+    
+    async function initializeSystem() {
+        if (confirm('Initialize with base primes? This will add 2, 3, 5 if not already present.')) {
             try {
-                const response = await fetch(`${API_URL}/markov_stats`, {
+                const response = await fetch(`${API_URL}/initialize`, {
                     headers: { Authorization: `Bearer ${TOKEN}` }
                 });
                 
@@ -449,79 +589,256 @@
                 }
                 
                 const data = await response.json();
-                const container = document.getElementById('stats');
-                
-                const stats = [
-                    { label: 'Total Primes', value: data.total_primes || 0 },
-                    { label: 'Constraints Learned', value: data.total_constraints || 0 },
-                    { label: 'Composites Analyzed', value: data.composites_analyzed || 0 },
-                    { label: 'Latest Prime', value: data.latest_prime || 'None' }
-                ];
-                
-                container.innerHTML = stats.map(stat => `
-                    <div class="stat-box">
-                        <div class="stat-value">${stat.value}</div>
-                        <div class="stat-label">${stat.label}</div>
-                    </div>
-                `).join('');
-                
+                alert(data.message || 'Initialized successfully');
+                updateLeaderboard();
+                updateStats();
             } catch (error) {
-                console.error('Error updating stats:', error);
-                const container = document.getElementById('stats');
-                container.innerHTML = `<div class="stat-box">
-                    <div class="stat-value">Error</div>
-                    <div class="stat-label">Failed to load stats</div>
-                </div>`;
+                alert('Error: ' + error.message);
             }
         }
-        
-        async function initializeSystem() {
-            if (confirm('Initialize with base primes? This will add 2, 3, 5 if not already present.')) {
-                try {
-                    const response = await fetch(`${API_URL}/initialize`, {
-                        headers: { Authorization: `Bearer ${TOKEN}` }
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    
-                    const data = await response.json();
-                    alert(data.message || 'Initialized successfully');
-                    updateLeaderboard();
-                    updateStats();
-                } catch (error) {
-                    alert('Error: ' + error.message);
-                }
-            }
-        }
+    }
 
-    async function generateDual() {
-        const count = document.getElementById('primeCount').value || 10;
-        const response = await fetch(`/generate_dual?count=${count}`, {
-                        headers: { Authorization: `Bearer ${TOKEN}` }
-                    });
-        const result = await response.json();
+    // ===== NEW VALIDATION FUNCTIONS =====
+    
+    async function runPruningTest() {
+        const count = 1000; // Test 1000 candidates by default
+        const resultsDiv = document.getElementById('validation-results');
+        resultsDiv.style.display = 'block';
+        resultsDiv.innerHTML = '<div style="padding: 15px; background: #1a1f2e; border-radius: 5px;">Testing pruning equivalence on ' + count + ' candidates...</div>';
         
-        // Display results
-        console.log("Experiment Results:", result.experiment_metrics);
-        displayResults(result);
+        try {
+            const response = await fetch(
+                `${API_URL}/validate/pruning?count=${count}`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${TOKEN}`
+                    }
+                }
+            );
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            displayPruningResults(data);
+        } catch (error) {
+            resultsDiv.innerHTML = `
+                <div class="validation-error validation-result">
+                    Error running pruning test: ${error.message}
+                </div>
+            `;
+        }
     }
     
-    async function validatePruning() {
-        const response = await fetch('/validate_pruning', {
-                        headers: { Authorization: `Bearer ${TOKEN}` }
-                    });
-        const result = await response.json();
-        alert(JSON.stringify(result, null, 2));
+    async function validateAllConstraints() {
+        const resultsDiv = document.getElementById('validation-results');
+        resultsDiv.style.display = 'block';
+        resultsDiv.innerHTML = '<div style="padding: 15px; background: #1a1f2e; border-radius: 5px;">Validating all constraints against functional rule...</div>';
+        
+        try {
+            const response = await fetch(
+                `${API_URL}/validate/constraints`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${TOKEN}`
+                    }
+                }
+            );
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            displayConstraintResults(data);
+        } catch (error) {
+            resultsDiv.innerHTML = `
+                <div class="validation-error validation-result">
+                    Error validating constraints: ${error.message}
+                </div>
+            `;
+        }
     }
     
-    async function checkExperimentStatus() {
-        const response = await fetch('/experiment_status', {
-                        headers: { Authorization: `Bearer ${TOKEN}` }
-                    });
-        const result = await response.json();
-        console.log("Experiment Status:", result);
+    async function showExplanation() {
+        const resultsDiv = document.getElementById('validation-results');
+        resultsDiv.style.display = 'block';
+        resultsDiv.innerHTML = '<div style="padding: 15px; background: #1a1f2e; border-radius: 5px;">Loading explanation...</div>';
+        
+        try {
+            const response = await fetch(
+                `${API_URL}/validate/explain`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${TOKEN}`
+                    }
+                }
+            );
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            displayExplanation(data);
+        } catch (error) {
+            resultsDiv.innerHTML = `
+                <div class="validation-error validation-result">
+                    Error loading explanation: ${error.message}
+                </div>
+            `;
+        }
+    }
+    
+    function displayPruningResults(data) {
+        const resultsDiv = document.getElementById('validation-results');
+        const r = data.results;
+        
+        let html = '<h4 style="color: #58a6ff; margin-top: 0;">Pruning Equivalence Test Results</h4>';
+        
+        const isValid = r.equivalence_holds;
+        const resultClass = isValid ? 'validation-success' : 'validation-error';
+        
+        html += `
+            <div class="${resultClass} validation-result">
+                <strong style="font-size: 1.1em;">${r.conclusion}</strong>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px;">
+                <div style="background: #0d1117; padding: 10px; border-radius: 5px;">
+                    <div style="color: #8b949e; font-size: 0.9em;">Candidates Checked</div>
+                    <div style="color: #58a6ff; font-size: 1.2em; font-weight: bold;">${r.total_candidates_checked}</div>
+                </div>
+                <div style="background: #0d1117; padding: 10px; border-radius: 5px;">
+                    <div style="color: #8b949e; font-size: 0.9em;">Empirical Prunes</div>
+                    <div style="color: #58a6ff; font-size: 1.2em; font-weight: bold;">${r.empirical_prunes}</div>
+                </div>
+                <div style="background: #0d1117; padding: 10px; border-radius: 5px;">
+                    <div style="color: #8b949e; font-size: 0.9em;">Functional Prunes</div>
+                    <div style="color: #58a6ff; font-size: 1.2em; font-weight: bold;">${r.functional_prunes}</div>
+                </div>
+                <div style="background: #0d1117; padding: 10px; border-radius: 5px;">
+                    <div style="color: #8b949e; font-size: 0.9em;">Violations Found</div>
+                    <div style="color: #da3633; font-size: 1.2em; font-weight: bold;">${r.violations_found}</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 15px; color: #8b949e;">
+                <strong>Test Duration:</strong> ${r.duration.toFixed(2)} seconds
+            </div>
+        `;
+        
+        if (r.violations_found > 0 && r.violation_details && r.violation_details.length > 0) {
+            html += `
+                <div style="margin-top: 15px;">
+                    <h5 style="color: #da3633; margin-bottom: 10px;">Violation Examples:</h5>
+                    <pre class="validation-output">${JSON.stringify(r.violation_details, null, 2)}</pre>
+                </div>
+            `;
+        }
+        
+        resultsDiv.innerHTML = html;
+    }
+    
+    function displayConstraintResults(data) {
+        const resultsDiv = document.getElementById('validation-results');
+        const r = data.results;
+        
+        let html = '<h4 style="color: #58a6ff; margin-top: 0;">Constraint Rule Validation Results</h4>';
+        
+        const isValid = r.all_constraints_follow_rule;
+        const resultClass = isValid ? 'validation-success' : 'validation-error';
+        
+        html += `
+            <div class="${resultClass} validation-result">
+                <strong style="font-size: 1.1em;">${r.conclusion}</strong>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px;">
+                <div style="background: #0d1117; padding: 10px; border-radius: 5px;">
+                    <div style="color: #8b949e; font-size: 0.9em;">Total Constraints</div>
+                    <div style="color: #58a6ff; font-size: 1.2em; font-weight: bold;">${r.total_constraints}</div>
+                </div>
+                <div style="background: #0d1117; padding: 10px; border-radius: 5px;">
+                    <div style="color: #8b949e; font-size: 0.9em;">Valid Constraints</div>
+                    <div style="color: #28a745; font-size: 1.2em; font-weight: bold;">${r.valid_constraints}</div>
+                </div>
+                <div style="background: #0d1117; padding: 10px; border-radius: 5px;">
+                    <div style="color: #8b949e; font-size: 0.9em;">Invalid Constraints</div>
+                    <div style="color: #da3633; font-size: 1.2em; font-weight: bold;">${r.invalid_constraints}</div>
+                </div>
+                <div style="background: #0d1117; padding: 10px; border-radius: 5px;">
+                    <div style="color: #8b949e; font-size: 0.9em;">Violation Rate</div>
+                    <div style="color: ${r.violation_rate > 0 ? '#da3633' : '#28a745'}; font-size: 1.2em; font-weight: bold;">${(r.violation_rate * 100).toFixed(2)}%</div>
+                </div>
+            </div>
+        `;
+        
+        if (r.invalid_constraints > 0 && r.violation_examples && r.violation_examples.length > 0) {
+            html += `
+                <div style="margin-top: 15px;">
+                    <h5 style="color: #da3633; margin-bottom: 10px;">Example Violations:</h5>
+                    <pre class="validation-output">${JSON.stringify(r.violation_examples, null, 2)}</pre>
+                </div>
+            `;
+        }
+        
+        resultsDiv.innerHTML = html;
+    }
+    
+    function displayExplanation(data) {
+        const resultsDiv = document.getElementById('validation-results');
+        
+        let html = '<h4 style="color: #58a6ff; margin-top: 0;">Theory Validation Explanation</h4>';
+        
+        html += `
+            <div class="validation-result validation-warning">
+                <strong style="font-size: 1.1em;">What We Are Testing</strong>
+            </div>
+            
+            <div style="margin-top: 15px; background: #0d1117; padding: 15px; border-radius: 5px;">
+                <h5 style="color: #79c0ff; margin-top: 0;">Current System</h5>
+                <p style="color: #8b949e;">
+                    Your system stores empirical constraints as <code>(p, k, f)</code> when <code>2p + k</code> 
+                    is composite with factor <code>f</code>.
+                </p>
+                <p style="color: #8b949e;">
+                    <strong>Empirical pruning rule:</strong> If <code>(p % f, k % f)</code> matches any stored constraint, prune.
+                </p>
+                
+                <h5 style="color: #79c0ff; margin-top: 20px;">Theoretical Rule</h5>
+                <p style="color: #8b949e;">
+                    <strong>Mathematical theorem:</strong> If <code>f</code> divides <code>2p + k</code>, then 
+                    <code>k ≡ -2p (mod f)</code>.
+                </p>
+                <p style="color: #8b949e;">
+                    <strong>Functional pruning rule:</strong> If <code>(k + 2p) % f == 0</code>, prune.
+                </p>
+                
+                <h5 style="color: #79c0ff; margin-top: 20px;">Goal of Validation</h5>
+                <p style="color: #8b949e;">
+                    We want to prove that every empirical constraint satisfies the functional rule, and that
+                    empirical pruning never prunes something the functional rule wouldn't prune.
+                </p>
+                <p style="color: #8b949e;">
+                    <strong>If both tests pass:</strong> Empirical learning is redundant and can be replaced by the functional rule.
+                </p>
+            </div>
+            
+            <div style="margin-top: 15px; color: #8b949e; font-size: 0.9em;">
+                <strong>Key Questions:</strong><br>
+                1. Do all stored <code>(p, k, f)</code> satisfy <code>(k + 2p) % f == 0</code>?<br>
+                2. Are there candidates pruned by empirical but not by functional rule?<br>
+                <br>
+                <strong>Implication:</strong> If both answers are NO, we can replace empirical learning with the functional rule.
+            </div>
+        `;
+        
+        resultsDiv.innerHTML = html;
     }
     
     // ## Do not remove the below code between "####"    
@@ -551,28 +868,28 @@
    // ## Do not remove the above code between "####"
     
     // Initialize on load
-        document.addEventListener('DOMContentLoaded', function() {
-            checkApiStatus();
-            updateLeaderboard();
-            updateStats();
-            
-            // Check API status every 30 seconds
-            setInterval(checkApiStatus, 30000);
-            
-            // Add event listener for Enter key in count input
-            document.getElementById('count').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    generatePrimes();
-                }
-            });
-            
-            // Add event listener for Enter key in displayLimit input
-            document.getElementById('displayLimit').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    updateLeaderboard();
-                }
-            });
+    document.addEventListener('DOMContentLoaded', function() {
+        checkApiStatus();
+        updateLeaderboard();
+        updateStats();
+        
+        // Check API status every 30 seconds
+        setInterval(checkApiStatus, 30000);
+        
+        // Add event listener for Enter key in count input
+        document.getElementById('count').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                generatePrimes();
+            }
         });
+        
+        // Add event listener for Enter key in displayLimit input
+        document.getElementById('displayLimit').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                updateLeaderboard();
+            }
+        });
+    });
 </script>
 
 </body>
