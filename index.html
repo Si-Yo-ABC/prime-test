@@ -248,6 +248,14 @@
             background: #5a32a3;
         }
         
+        .btn-comparison {
+            background: #fd7e14;
+        }
+        
+        .btn-comparison:hover {
+            background: #e8590c;
+        }
+        
         .validation-result {
             margin-top: 15px;
             padding: 15px;
@@ -282,6 +290,45 @@
             font-family: 'Courier New', Courier, monospace;
             font-size: 0.9em;
             margin-top: 10px;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .comparison-table th {
+            background: #0d1117;
+            color: #58a6ff;
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #30363d;
+        }
+        
+        .comparison-table td {
+            padding: 10px;
+            border: 1px solid #30363d;
+        }
+        
+        .prune-true {
+            color: #da3633;
+            font-weight: bold;
+        }
+        
+        .prune-false {
+            color: #238636;
+            font-weight: bold;
+        }
+        
+        .consistent-true {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .consistent-false {
+            background: #f8d7da;
+            color: #721c24;
         }
     </style>
 </head>
@@ -327,6 +374,9 @@
                     </button>
                     <button onclick="validateAllConstraints()" class="btn-validate">
                         Validate All Constraints
+                    </button>
+                    <button onclick="runDirectComparison()" class="btn-comparison">
+                        Direct Comparison
                     </button>
                     <button onclick="showExplanation()" class="btn-explain">
                         View Explanation
@@ -663,6 +713,38 @@
         }
     }
     
+    // NEW: Direct Comparison Function
+    async function runDirectComparison() {
+        const resultsDiv = document.getElementById('validation-results');
+        resultsDiv.style.display = 'block';
+        resultsDiv.innerHTML = '<div style="padding: 15px; background: #1a1f2e; border-radius: 5px;">Running direct comparison on recent primes...</div>';
+        
+        try {
+            const response = await fetch(
+                `${API_URL}/validate/direct_comparison`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${TOKEN}`
+                    }
+                }
+            );
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            displayDirectComparisonResults(data);
+        } catch (error) {
+            resultsDiv.innerHTML = `
+                <div class="validation-error validation-result">
+                    Error running direct comparison: ${error.message}
+                </div>
+            `;
+        }
+    }
+    
     async function showExplanation() {
         const resultsDiv = document.getElementById('validation-results');
         resultsDiv.style.display = 'block';
@@ -790,6 +872,77 @@
         resultsDiv.innerHTML = html;
     }
     
+    // NEW: Display Direct Comparison Results
+    function displayDirectComparisonResults(data) {
+        const resultsDiv = document.getElementById('validation-results');
+        
+        let html = '<h4 style="color: #58a6ff; margin-top: 0;">Direct Comparison Results</h4>';
+        
+        const violations = data.violations || 0;
+        const resultClass = violations === 0 ? 'validation-success' : 'validation-error';
+        
+        html += `
+            <div class="${resultClass} validation-result">
+                <strong style="font-size: 1.1em;">${data.conclusion || 'Direct comparison completed'}</strong>
+                <div style="margin-top: 10px;">
+                    Tested ${data.test_candidates || 0} candidates, found ${violations} violations
+                </div>
+            </div>
+        `;
+        
+        if (data.results && data.results.length > 0) {
+            html += `
+                <div style="margin-top: 15px;">
+                    <h5 style="color: #58a6ff; margin-bottom: 10px;">Detailed Comparison:</h5>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>p</th>
+                                <th>k</th>
+                                <th>n = 2p+k</th>
+                                <th>Is Prime?</th>
+                                <th>Empirical Prune</th>
+                                <th>Functional Prune</th>
+                                <th>Consistent?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            data.results.forEach(result => {
+                const isPrime = result.is_prime ? '✓ Prime' : '✗ Composite';
+                const empiricalPrune = result.empirical_prune ? 
+                    '<span class="prune-true">YES</span>' : 
+                    '<span class="prune-false">NO</span>';
+                const functionalPrune = result.functional_prune ? 
+                    '<span class="prune-true">YES</span>' : 
+                    '<span class="prune-false">NO</span>';
+                const consistentClass = result.consistent ? 'consistent-true' : 'consistent-false';
+                const consistentText = result.consistent ? '✓' : '✗';
+                
+                html += `
+                    <tr>
+                        <td>${result.p}</td>
+                        <td>${result.k}</td>
+                        <td>${result.n}</td>
+                        <td>${isPrime}</td>
+                        <td>${empiricalPrune}</td>
+                        <td>${functionalPrune}</td>
+                        <td class="${consistentClass}">${consistentText}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        
+        resultsDiv.innerHTML = html;
+    }
+    
     function displayExplanation(data) {
         const resultsDiv = document.getElementById('validation-results');
         
@@ -867,7 +1020,7 @@
    // ###############################################
    // ## Do not remove the above code between "####"
     
-    // Initialize on load
+   // Initialize on load
     document.addEventListener('DOMContentLoaded', function() {
         checkApiStatus();
         updateLeaderboard();
