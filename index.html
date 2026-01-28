@@ -155,6 +155,12 @@
             text-align: center;
         }
 
+        .stat-box.full-width {
+            grid-column: 1 / -1;
+            background: #161b22; /* Optional: subtle highlight for the result */
+            border-color: #58a6ff;
+        }
+
         .stat-value {
             font-size: 2em;
             color: #58a6ff;
@@ -586,17 +592,23 @@
                 { label: 'Latest Prime', value: data.latest_prime || 'None' }
             ];
             
-            container.innerHTML = stats.map(stat => `
-                <div class="stat-box">
-                    <div class="stat-value">${stat.value}</div>
-                    <div class="stat-label">${stat.label}</div>
-                </div>
-            `).join('');
+            // Updated logic: Check for 'Latest Prime' to add the extra CSS class
+            container.innerHTML = stats.map(stat => {
+                const isLatestPrime = stat.label === 'Latest Prime';
+                const extraClass = isLatestPrime ? 'full-width' : '';
+                
+                return `
+                    <div class="stat-box ${extraClass}">
+                        <div class="stat-value">${stat.value}</div>
+                        <div class="stat-label">${stat.label}</div>
+                    </div>
+                `;
+            }).join('');
             
         } catch (error) {
             console.error('Error updating stats:', error);
             const container = document.getElementById('stats');
-            container.innerHTML = `<div class="stat-box">
+            container.innerHTML = `<div class="stat-box full-width">
                 <div class="stat-value">Error</div>
                 <div class="stat-label">Failed to load stats</div>
             </div>`;
