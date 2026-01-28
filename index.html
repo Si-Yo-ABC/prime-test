@@ -374,19 +374,19 @@
         </div>
 
         <div class="panel">
-            <h3>Generation Results</h3>
-            <div id="results" class="results">
-                <!-- Results will appear here -->
-            </div>
-        </div>
-
-        <div class="panel">
             <h3>Statistics</h3>
             <div id="stats" class="stats-grid">
                 <!-- Stats will appear here -->
             </div>
             <div style="margin-top: 15px;">
                 <button onclick="updateStats()" style="width: 100%;">Refresh Statistics</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>Generation Results</h3>
+            <div id="results" class="results">
+                <!-- Results will appear here -->
             </div>
         </div>
 
@@ -544,9 +544,11 @@
                 div.innerHTML = `
                     <div class="prime-value">${item.value}</div>
                     <div class="prime-meta">
-                        Source: ${item.source} |
+                        Base: ${item.base} |
+                        Factor: ${item.factor} |
                         Offset: ${item.offset} |
-                        Method: ${item.method}
+                        Method: ${item.method} |
+                        Time: ${item.time}
                     </div>
                 `;
                 
