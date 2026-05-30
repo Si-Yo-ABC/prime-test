@@ -196,7 +196,7 @@
     }
 
     // Helper: fetch with token and auto-parse JSON
-    async function apiGet(path, method = 'GET') {
+    async function apiCall(path, method = 'GET') {
         const url = `${API_URL}${path}`;
         const response = await fetch(url, {
             method: method,
@@ -216,7 +216,7 @@
         const indicator = document.getElementById('api-status-indicator');
         const statusText = document.getElementById('api-status-text');
         try {
-            const { status, data } = await apiGet('/stats');
+            const { status, data } = await apiCall('/stats');
             if (status === 200) {
                 indicator.className = 'status-indicator status-online';
                 statusText.textContent = 'API Online';
@@ -242,7 +242,7 @@
         }
         log(`Computing n = ${n} via /compute_one/${n} ...`);
         try {
-            const { status, data } = await apiGet(`/compute_one/${n}`);
+            const { status, data } = await apiCall(`/compute_one/${n}`);
             if (status === 200) {
                 log(`Computed successfully: k_hit_mid = ${data.k_hit_mid}, delta_mid = ${data.delta_mid}`, false, true);
                 // Optionally show full response
@@ -263,7 +263,7 @@
             return;
         }
         log(`Fetching first hit for n = ${n} ...`);
-        const { status, data } = await apiGet(`/experiment/first_hit/${n}`);
+        const { status, data } = await apiCall(`/experiment/first_hit/${n}`);
         if (status === 200) {
             log(`Data found: k_hit_mid = ${data.k_hit_mid}, delta_mid = ${data.delta_mid}`, false, true);
             log(`Full: ${JSON.stringify(data, null, 2)}`, false);
@@ -282,7 +282,7 @@
         }
         logExp2(`Computing all Goldbach pairs for n = ${n} ...`);
         try {
-            const { status, data } = await apiGet(`/compute_pairs/${n}`);
+            const { status, data } = await apiCall(`/compute_pairs/${n}`);
             if (status === 200) {
                 logExp2(`✅ Stored ${data.count} pairs.`, false, true);
                 if (data.pairs) displayPairs(data.pairs);
@@ -298,7 +298,7 @@
         let n = parseInt(document.getElementById('exp2Number').value, 10);
         if (isNaN(n)) return;
         logExp2(`Fetching stored pairs for n = ${n} ...`);
-        const { status, data } = await apiGet(`/experiment/pairs/${n}`);
+        const { status, data } = await apiCall(`/experiment/pairs/${n}`);
         if (status === 200) {
             logExp2(`✅ Found ${data.pairs.length} pairs.`, false, true);
             displayPairs(data.pairs);
@@ -325,7 +325,7 @@
         if (!confirm("⚠️ This will DELETE ALL existing first-hit data and add new columns (if missing). Proceed?")) return;
         log("Resetting experiment_first_hit table...");
         try {
-            const { status, data } = await apiGet('/reset_first_hit', { method: 'DELETE' });
+            const { status, data } = await apiCall('/reset_first_hit', 'DELETE');
             if (status === 200) {
                 log(`✅ ${data.message}`, false, true);
                 checkStats();  // refresh stats display
