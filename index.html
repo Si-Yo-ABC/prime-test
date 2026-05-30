@@ -155,6 +155,11 @@
     </div>
 </div>
 
+    <hr>
+<div class="flex">
+    <button id="resetFirstHitBtn" class="danger-btn">🧹 RESET First-Hit Data (Add new columns & clear)</button>
+</div>
+
 <script>
     
     // --- CONFIGURATION ---
@@ -257,6 +262,22 @@
             log(`Error ${status}: ${JSON.stringify(data)}`, true);
         }
     }
+
+    async function resetFirstHit() {
+    if (!confirm("⚠️ This will DELETE ALL existing first-hit data and add new columns (if missing). Proceed?")) return;
+    log("Resetting experiment_first_hit table...");
+    try {
+        const { status, data } = await apiGet('/reset_first_hit', { method: 'DELETE' });
+        if (status === 200) {
+            log(`✅ ${data.message}`, false, true);
+            checkStats();  // refresh stats display
+        } else {
+            log(`❌ Reset failed (${status}): ${JSON.stringify(data)}`, true);
+        }
+    } catch (err) {
+        log(`Request error: ${err.message}`, true);
+    }
+}
 
     // Wire buttons
     document.getElementById('checkHealthBtn').addEventListener('click', checkStats);
