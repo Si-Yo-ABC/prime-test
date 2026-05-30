@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elohim.dev License Test (HF Token Auth)</title>
+    <title>Goldbach First-Hit Tester (HF Token Auth)</title>
     <style>
         body {
             font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-            max-width: 600px;
+            max-width: 700px;
             margin: 2rem auto;
             padding: 0 1rem;
             background: #0a0f1e;
@@ -98,6 +98,8 @@
             word-break: break-all;
             margin-top: 1rem;
             border-left: 3px solid #facc15;
+            max-height: 400px;
+            overflow-y: auto;
         }
         .flex {
             display: flex;
@@ -116,39 +118,40 @@
             font-size: 0.75rem;
             margin-top: 1rem;
         }
+        .success {
+            background: #064e3b;
+            border-left-color: #22c55e;
+        }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h1>🧪 Elohim.dev License Test</h1>
-    <p>Mock license server — Hugging Face Space (Token Auth required)</p>
+    <h1>🧪 Goldbach First-Hit Tester</h1>
+    <p>Direct test of your FastAPI endpoints on Hugging Face (Token Auth required)</p>
 
-    <!-- API Status Indicator -->
     <div class="status-row">
         <div id="api-status-indicator" class="status-indicator"></div>
         <span id="api-status-text">—</span>
         <span style="flex:1"></span>
-        <button id="checkHealthBtn">🔍 Check Health</button>
+        <button id="checkHealthBtn">🔍 Check /stats</button>
     </div>
 
-    <!-- Activation section -->
-    <label>🔑 Product Key</label>
-    <input type="text" id="productKey" placeholder="e.g., DEMO-1234-ABCD" value="DEMO-1234-ABCD">
-    
-    <label style="margin-top: 0.75rem; display: block;">🖥️ Machine ID (auto-detected)</label>
-    <input type="text" id="machineId" readonly placeholder="detecting...">
+    <label>🔢 Even number (n)</label>
+    <input type="number" id="evenNumber" value="100" step="2">
     
     <div class="flex" style="margin-top: 1rem;">
-        <button id="activateBtn">✅ Activate License</button>
+        <button id="computeOneBtn">⚡ Compute & Store (GET /compute_one/{n})</button>
+        <button id="fetchHitBtn">📥 Fetch First Hit (GET /experiment/first_hit/{n})</button>
         <button id="clearOutputBtn" class="danger-btn" style="background:#334155;">Clear Log</button>
     </div>
 
     <div class="output" id="outputArea">
-        💡 Click "Check Health" first, then enter a product key and click Activate.
+        💡 Click "Check /stats" first. Then enter an even number and click Compute.
     </div>
     <div class="warning">
-        ⚠️ Make sure you have set <strong>partB</strong> in the script with your actual Hugging Face token (everything after <code>hf_</code>).
+        ⚠️ Make sure you set your real Hugging Face token in the script below.<br>
+        Replace <code>YOUR_HF_TOKEN_HERE</code> with <code>hf_xxxx...</code>.
     </div>
 </div>
 
@@ -166,25 +169,9 @@
         const HF_TOKEN = partA + partB; 
     // --------------------- 
         
-   // Helper to get a machine ID (browser fingerprint stored in localStorage)
-    async function getMachineId() {
-        let storedId = localStorage.getItem('elohim_machine_id');
-        if (storedId) return storedId;
-        
-        const fp = `${navigator.userAgent}|${screen.width}x${screen.height}|${Intl.DateTimeFormat().resolvedOptions().timeZone}`;
-        let hash = 0;
-        for (let i = 0; i < fp.length; i++) {
-            hash = ((hash << 5) - hash) + fp.charCodeAt(i);
-            hash |= 0;
-        }
-        const machineId = `browser-${Math.abs(hash).toString(16)}`;
-        localStorage.setItem('elohim_machine_id', machineId);
-        return machineId;
-    }
-
-    function log(message, isError = false) {
+   function log(message, isError = false, isSuccess = false) {
         const output = document.getElementById('outputArea');
-        const prefix = isError ? '❌ ' : '✅ ';
+        const prefix = isError ? '❌ ' : (isSuccess ? '✅ ' : '📌 ');
         output.innerHTML = prefix + message + '\n' + output.innerHTML;
     }
 
@@ -192,91 +179,93 @@
         document.getElementById('outputArea').innerHTML = '💡 Log cleared.';
     }
 
-    // Check API health (GET /health) – MUST include Bearer token
-    async function checkApiStatus() {
+    // Helper: fetch with token and auto-parse JSON
+    async function apiGet(path) {
+        const url = `${API_URL}${path}`;
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${HF_TOKEN}` }
+        });
+        let data;
+        try {
+            data = await response.json();
+        } catch(e) {
+            data = { error: "Could not parse JSON", raw: await response.text() };
+        }
+        return { status: response.status, data };
+    }
+
+    // Check /stats
+    async function checkStats() {
         const indicator = document.getElementById('api-status-indicator');
         const statusText = document.getElementById('api-status-text');
-        
         try {
-            const response = await fetch(`${API_URL}/health`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${HF_TOKEN}`
-                }
-            });
-            if (response.ok) {
-                const data = await response.json();
+            const { status, data } = await apiGet('/stats');
+            if (status === 200) {
                 indicator.className = 'status-indicator status-online';
                 statusText.textContent = 'API Online';
-                log(`Health check OK: ${JSON.stringify(data)}`);
+                log(`/stats returned: largest_n = ${data.largest_n}, total_processed = ${data.total_processed}`, false, true);
             } else {
                 indicator.className = 'status-indicator status-offline';
-                statusText.textContent = `API Error (${response.status})`;
-                log(`Health check failed with status ${response.status}`, true);
-                // Optionally read error text
-                const text = await response.text();
-                if (text) log(`Response: ${text}`, true);
+                statusText.textContent = `Error ${status}`;
+                log(`/stats failed with status ${status}: ${JSON.stringify(data)}`, true);
             }
-        } catch (error) {
+        } catch (err) {
             indicator.className = 'status-indicator status-offline';
-            statusText.textContent = 'API Connection Failed';
-            log(`Connection error: ${error.message}`, true);
+            statusText.textContent = 'Connection Failed';
+            log(`Network error: ${err.message}`, true);
         }
     }
 
-    // Activate license (POST /activate) – MUST include Bearer token
-    async function activateLicense() {
-        const productKey = document.getElementById('productKey').value.trim();
-        if (!productKey) {
-            log('Please enter a product key', true);
+    // Compute one even number
+    async function computeOne() {
+        let n = parseInt(document.getElementById('evenNumber').value, 10);
+        if (isNaN(n) || n % 2 !== 0 || n <= 2) {
+            log("Please enter a valid even number > 2", true);
             return;
         }
-        const machineId = document.getElementById('machineId').value;
-        if (!machineId) {
-            log('Machine ID not ready yet. Wait a moment.', true);
-            return;
-        }
-        
-        log(`Sending activation request for key ${productKey}...`);
+        log(`Computing n = ${n} via /compute_one/${n} ...`);
         try {
-            const response = await fetch(`${API_URL}/activate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${HF_TOKEN}`
-                },
-                body: JSON.stringify({
-                    product_key: productKey,
-                    machine_id: machineId
-                })
-            });
-            const data = await response.json();
-            if (response.ok) {
-                log(`Activation successful! License token: ${data.license_token || 'N/A'}`);
-                localStorage.setItem('elohim_license_token', data.license_token);
+            const { status, data } = await apiGet(`/compute_one/${n}`);
+            if (status === 200) {
+                log(`Computed successfully: k_hit_mid = ${data.k_hit_mid}, delta_mid = ${data.delta_mid}`, false, true);
+                // Optionally show full response
+                log(`Full response: ${JSON.stringify(data, null, 2)}`, false);
             } else {
-                log(`Activation failed (${response.status}): ${data.detail || JSON.stringify(data)}`, true);
+                log(`Compute failed (${status}): ${JSON.stringify(data)}`, true);
             }
-        } catch (error) {
-            log(`Activation request error: ${error.message}`, true);
+        } catch (err) {
+            log(`Request error: ${err.message}`, true);
         }
     }
 
-    // Initialize
-    (async function init() {
-        const machineIdInput = document.getElementById('machineId');
-        const id = await getMachineId();
-        machineIdInput.value = id;
-        log(`Machine ID: ${id}`);
-        
-        // Optional: auto-check health on page load
-        await checkApiStatus();
-    })();
+    // Fetch existing first-hit data
+    async function fetchFirstHit() {
+        let n = parseInt(document.getElementById('evenNumber').value, 10);
+        if (isNaN(n) || n % 2 !== 0) {
+            log("Please enter a valid even number", true);
+            return;
+        }
+        log(`Fetching first hit for n = ${n} ...`);
+        const { status, data } = await apiGet(`/experiment/first_hit/${n}`);
+        if (status === 200) {
+            log(`Data found: k_hit_mid = ${data.k_hit_mid}, delta_mid = ${data.delta_mid}`, false, true);
+            log(`Full: ${JSON.stringify(data, null, 2)}`, false);
+        } else if (status === 404) {
+            log(`Not computed yet (404). Use "Compute & Store" first.`, true);
+        } else {
+            log(`Error ${status}: ${JSON.stringify(data)}`, true);
+        }
+    }
 
     // Wire buttons
-    document.getElementById('checkHealthBtn').addEventListener('click', checkApiStatus);
-    document.getElementById('activateBtn').addEventListener('click', activateLicense);
+    document.getElementById('checkHealthBtn').addEventListener('click', checkStats);
+    document.getElementById('computeOneBtn').addEventListener('click', computeOne);
+    document.getElementById('fetchHitBtn').addEventListener('click', fetchFirstHit);
     document.getElementById('clearOutputBtn').addEventListener('click', clearOutput);
+
+    // Auto-check stats on page load
+    checkStats();
 </script>
 </body>
 </html>
