@@ -154,6 +154,17 @@
         Replace <code>YOUR_HF_TOKEN_HERE</code> with <code>hf_xxxx...</code>.
     </div>
 </div>
+    <hr>
+<h2>Experiment 2: Full Goldbach Spectrum</h2>
+<label>🔢 Even number (n)</label>
+<input type="number" id="exp2Number" value="100" step="2">
+<div class="flex">
+    <button id="computePairsBtn">📚 Compute & Store All Pairs</button>
+    <button id="fetchPairsBtn">🔍 Fetch Stored Pairs</button>
+</div>
+<div id="pairsOutput" class="output" style="margin-top:0.5rem; font-size:0.7rem;">
+    💡 Pairs will appear here.
+</div>
 
     <hr>
 <div class="flex">
@@ -185,10 +196,10 @@
     }
 
     // Helper: fetch with token and auto-parse JSON
-    async function apiGet(path) {
+    async function apiGet(path, method = 'GET') {
         const url = `${API_URL}${path}`;
         const response = await fetch(url, {
-            method: 'GET',
+            method: method,
             headers: { 'Authorization': `Bearer ${HF_TOKEN}` }
         });
         let data;
@@ -263,24 +274,73 @@
         }
     }
 
-    async function resetFirstHit() {
-    if (!confirm("⚠️ This will DELETE ALL existing first-hit data and add new columns (if missing). Proceed?")) return;
-    log("Resetting experiment_first_hit table...");
-    try {
-        const { status, data } = await apiGet('/reset_first_hit', { method: 'DELETE' });
-        if (status === 200) {
-            log(`✅ ${data.message}`, false, true);
-            checkStats();  // refresh stats display
-        } else {
-            log(`❌ Reset failed (${status}): ${JSON.stringify(data)}`, true);
+    async function computePairs() {
+        let n = parseInt(document.getElementById('exp2Number').value, 10);
+        if (isNaN(n) || n % 2 !== 0 || n <= 2) {
+            logExp2("Please enter a valid even number > 2", true);
+            return;
         }
-    } catch (err) {
-        log(`Request error: ${err.message}`, true);
+        logExp2(`Computing all Goldbach pairs for n = ${n} ...`);
+        try {
+            const { status, data } = await apiGet(`/compute_pairs/${n}`);
+            if (status === 200) {
+                logExp2(`✅ Stored ${data.count} pairs.`, false, true);
+                if (data.pairs) displayPairs(data.pairs);
+            } else {
+                logExp2(`Error ${status}: ${JSON.stringify(data)}`, true);
+            }
+        } catch (err) {
+            logExp2(`Request error: ${err.message}`, true);
+        }
     }
-}
+    
+    async function fetchPairs() {
+        let n = parseInt(document.getElementById('exp2Number').value, 10);
+        if (isNaN(n)) return;
+        logExp2(`Fetching stored pairs for n = ${n} ...`);
+        const { status, data } = await apiGet(`/experiment/pairs/${n}`);
+        if (status === 200) {
+            logExp2(`✅ Found ${data.pairs.length} pairs.`, false, true);
+            displayPairs(data.pairs);
+        } else if (status === 404) {
+            logExp2(`❌ No pairs computed yet for n = ${n}. Use "Compute & Store" first.`, true);
+        } else {
+            logExp2(`Error ${status}: ${JSON.stringify(data)}`, true);
+        }
+    }
+    
+    function displayPairs(pairs) {
+        const output = document.getElementById('pairsOutput');
+        output.innerHTML = "<strong>Pairs (p, q):</strong><br>" + 
+            pairs.map(pair => `${pair.p} + ${pair.q} = ${pair.p+pair.q} (distance ${pair.distance})`).join('<br>');
+    }
+    
+    function logExp2(message, isError = false, isSuccess = false) {
+        const output = document.getElementById('pairsOutput');
+        const prefix = isError ? '❌ ' : (isSuccess ? '✅ ' : '📌 ');
+        output.innerHTML = prefix + message + '<br>' + output.innerHTML;
+    }
+
+    async function resetFirstHit() {
+        if (!confirm("⚠️ This will DELETE ALL existing first-hit data and add new columns (if missing). Proceed?")) return;
+        log("Resetting experiment_first_hit table...");
+        try {
+            const { status, data } = await apiGet('/reset_first_hit', { method: 'DELETE' });
+            if (status === 200) {
+                log(`✅ ${data.message}`, false, true);
+                checkStats();  // refresh stats display
+            } else {
+                log(`❌ Reset failed (${status}): ${JSON.stringify(data)}`, true);
+            }
+        } catch (err) {
+            log(`Request error: ${err.message}`, true);
+        }
+    }
 
     // Wire buttons
     document.getElementById('resetFirstHitBtn').addEventListener('click', resetFirstHit);
+    document.getElementById('computePairsBtn').addEventListener('click', computePairs);
+    document.getElementById('fetchPairsBtn').addEventListener('click', fetchPairs);
     document.getElementById('checkHealthBtn').addEventListener('click', checkStats);
     document.getElementById('computeOneBtn').addEventListener('click', computeOne);
     document.getElementById('fetchHitBtn').addEventListener('click', fetchFirstHit);
