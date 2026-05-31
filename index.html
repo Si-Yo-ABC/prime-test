@@ -244,9 +244,8 @@
         try {
             const { status, data } = await apiCall(`/compute_one/${n}`);
             if (status === 200) {
-                log(`Computed successfully: k_hit_mid = ${data.k_hit_mid}, delta_mid = ${data.delta_mid}`, false, true);
-                // Optionally show full response
-                log(`Full response: ${JSON.stringify(data, null, 2)}`, false);
+                log(`✅ Computed: mid k_hit=${data.k_hit_mid}, Δ_mid=${data.delta_mid} | edge k_hit=${data.edge_k_hit}, Δ_edge=${data.delta_edge}`, false, true);
+                log(`Mid pair: ${data.mid_pair_a}+${data.mid_pair_b} | Edge pair: ${data.edge_pair_a}+${data.edge_pair_b}`, false);
             } else {
                 log(`Compute failed (${status}): ${JSON.stringify(data)}`, true);
             }
@@ -265,8 +264,17 @@
         log(`Fetching first hit for n = ${n} ...`);
         const { status, data } = await apiCall(`/experiment/first_hit/${n}`);
         if (status === 200) {
-            log(`Data found: k_hit_mid = ${data.k_hit_mid}, delta_mid = ${data.delta_mid}`, false, true);
-            log(`Full: ${JSON.stringify(data, null, 2)}`, false);
+            // Format nicely
+            const msg = `
+                n = ${data.n}
+                Midpoint: k_adm = ${data.k_adm_mid}, k_hit = ${data.k_hit_mid}, Δ = ${data.delta_mid}
+                Pair: ${data.mid_pair_a} + ${data.mid_pair_b}
+                Edge: edge_k_adm = ${data.edge_k_adm}, edge_k_hit = ${data.edge_k_hit}, Δ_edge = ${data.delta_edge}
+                Pair: ${data.edge_pair_a} + ${data.edge_pair_b}
+            `;
+            log(msg, false, true);
+            // Also keep raw JSON if you want
+            log(`Full JSON: ${JSON.stringify(data, null, 2)}`, false);
         } else if (status === 404) {
             log(`Not computed yet (404). Use "Compute & Store" first.`, true);
         } else {
