@@ -411,8 +411,6 @@
             output.innerHTML = `❌ Request failed: ${err.message}`;
         }
     }
-    
-    document.getElementById('statsBtn').addEventListener('click', showNormalizedStats);
 
     //this is to delete database or tables
     async function resetFirstHit() {
@@ -443,6 +441,8 @@
     //experiment 3: normalized depth
     document.getElementById('computeNormBtn').addEventListener('click', computeNormalized);
     document.getElementById('fetchNormBtn').addEventListener('click', fetchNormalized);
+    //experiment 4: normalized stats
+    document.getElementById('statsBtn').addEventListener('click', showNormalizedStats);
     // to delete button for database or table.
     document.getElementById('resetFirstHitBtn').addEventListener('click', resetFirstHit);
 
