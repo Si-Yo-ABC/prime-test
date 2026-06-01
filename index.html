@@ -349,6 +349,27 @@
         logNorm(`Computing normalized depth for n = ${n} ...`);
         try {
             const { status, data } = await apiCall(`/compute_normalized/${n}`);
+            console.log("Raw response:", data);  // <-- ADD THIS
+            if (status === 200) {
+                logNorm(`✅ λ_mid = ${data.lambda_mid?.toFixed(4) ?? 'N/A'}, λ_edge = ${data.lambda_edge?.toFixed(4) ?? 'N/A'} (H=${data.H})`, false, true);
+                logNorm(`k_hit_mid = ${data.k_hit_mid}, k_hit_edge = ${data.k_hit_edge}`, false);
+            } else {
+                logNorm(`Error ${status}: ${JSON.stringify(data)}`, true);
+            }
+        } catch (err) {
+            logNorm(`Request error: ${err.message}`, true);
+        }
+    }
+    /*
+    async function computeNormalized() {
+        let n = parseInt(document.getElementById('normNumber').value, 10);
+        if (isNaN(n) || n % 2 !== 0 || n <= 2) {
+            logNorm("Please enter a valid even number > 2", true);
+            return;
+        }
+        logNorm(`Computing normalized depth for n = ${n} ...`);
+        try {
+            const { status, data } = await apiCall(`/compute_normalized/${n}`);
             if (status === 200) {
                 logNorm(`✅ λ_mid = ${data.lambda_mid.toFixed(4)}, λ_edge = ${data.lambda_edge.toFixed(4)} (H=${data.H})`, false, true);
                 logNorm(`k_hit_mid = ${data.k_hit_mid}, k_hit_edge = ${data.k_hit_edge}`, false);
@@ -358,7 +379,7 @@
         } catch (err) {
             logNorm(`Request error: ${err.message}`, true);
         }
-    }
+    }*/
     
     // Fetch already computed normalized depth
     async function fetchNormalized() {
