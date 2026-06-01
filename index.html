@@ -179,6 +179,13 @@
 </div>
 
     <hr>
+<h2>Experiment 4: Normalized Depth Statistics</h2>
+<button id="statsBtn">📊 Show Lambda Statistics</button>
+<div id="statsOutput" class="output" style="margin-top:0.5rem;">
+    💡 Click to see max λ and averages.
+</div>
+    
+    <hr>
 <div class="flex">
     <button id="resetFirstHitBtn" class="danger-btn">🧹 RESET First-Hit Data (Add new columns & clear)</button>
 </div>
@@ -360,26 +367,6 @@
             logNorm(`Request error: ${err.message}`, true);
         }
     }
-    /*
-    async function computeNormalized() {
-        let n = parseInt(document.getElementById('normNumber').value, 10);
-        if (isNaN(n) || n % 2 !== 0 || n <= 2) {
-            logNorm("Please enter a valid even number > 2", true);
-            return;
-        }
-        logNorm(`Computing normalized depth for n = ${n} ...`);
-        try {
-            const { status, data } = await apiCall(`/compute_normalized/${n}`);
-            if (status === 200) {
-                logNorm(`✅ λ_mid = ${data.lambda_mid.toFixed(4)}, λ_edge = ${data.lambda_edge.toFixed(4)} (H=${data.H})`, false, true);
-                logNorm(`k_hit_mid = ${data.k_hit_mid}, k_hit_edge = ${data.k_hit_edge}`, false);
-            } else {
-                logNorm(`Error ${status}: ${JSON.stringify(data)}`, true);
-            }
-        } catch (err) {
-            logNorm(`Request error: ${err.message}`, true);
-        }
-    }*/
     
     // Fetch already computed normalized depth
     async function fetchNormalized() {
@@ -402,6 +389,30 @@
         const prefix = isError ? '❌ ' : (isSuccess ? '✅ ' : '📌 ');
         output.innerHTML = prefix + message + '<br>' + output.innerHTML;
     }
+
+    //experiment 4 normalized stats
+    async function showNormalizedStats() {
+        const output = document.getElementById('statsOutput');
+        output.innerHTML = "📊 Fetching statistics...";
+        try {
+            const { status, data } = await apiCall('/normalized_stats');
+            if (status === 200) {
+                output.innerHTML = `
+                    ✅ Total records: ${data.total_records}<br>
+                    📈 Max λ_mid = ${data.max_lambda_mid?.toFixed(4)} (n=${data.n_for_max_mid})<br>
+                    📈 Max λ_edge = ${data.max_lambda_edge?.toFixed(4)} (n=${data.n_for_max_edge})<br>
+                    📉 Avg λ_mid = ${data.avg_lambda_mid?.toFixed(4)}<br>
+                    📉 Avg λ_edge = ${data.avg_lambda_edge?.toFixed(4)}
+                `;
+            } else {
+                output.innerHTML = `❌ Error: ${JSON.stringify(data)}`;
+            }
+        } catch(err) {
+            output.innerHTML = `❌ Request failed: ${err.message}`;
+        }
+    }
+    
+    document.getElementById('statsBtn').addEventListener('click', showNormalizedStats);
 
     //this is to delete database or tables
     async function resetFirstHit() {
