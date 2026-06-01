@@ -179,10 +179,10 @@
 </div>
 
     <hr>
-<h2>Experiment 4: Normalized Depth Statistics</h2>
-<button id="statsBtn">📊 Show Lambda Statistics</button>
-<div id="statsOutput" class="output" style="margin-top:0.5rem;">
-    💡 Click to see max λ and averages.
+<h2>Experiment 4: Worst‑Case Depth Tracker</h2>
+<button id="worstCasesBtn">📊 Show Worst Cases</button>
+<div id="worstOutput" class="output" style="margin-top:0.5rem;">
+    💡 Click to see the deepest normalized depths observed.
 </div>
     
     <hr>
@@ -391,19 +391,26 @@
     }
 
     //experiment 4 normalized stats
-    async function showNormalizedStats() {
-        const output = document.getElementById('statsOutput');
-        output.innerHTML = "📊 Fetching statistics...";
+    async function showWorstCases() {
+        const output = document.getElementById('worstOutput');
+        output.innerHTML = "📊 Fetching worst cases...";
         try {
-            const { status, data } = await apiCall('/normalized_stats');
+            const { status, data } = await apiCall('/experiment/worst_cases');
             if (status === 200) {
-                output.innerHTML = `
-                    ✅ Total records: ${data.total_records}<br>
-                    📈 Max λ_mid = ${data.max_lambda_mid?.toFixed(4)} (n=${data.n_for_max_mid})<br>
-                    📈 Max λ_edge = ${data.max_lambda_edge?.toFixed(4)} (n=${data.n_for_max_edge})<br>
-                    📉 Avg λ_mid = ${data.avg_lambda_mid?.toFixed(4)}<br>
-                    📉 Avg λ_edge = ${data.avg_lambda_edge?.toFixed(4)}
-                `;
+                let html = `✅ Total records: ${data.total_records}<br>
+                            📈 Max λ_mid = ${data.max_lambda_mid?.toFixed(4)} (n=${data.max_lambda_mid_n})<br>
+                            📈 Max λ_edge = ${data.max_lambda_edge?.toFixed(4)} (n=${data.max_lambda_edge_n})<br>
+                            <hr><strong>Worst Midpoint (Top 10):</strong><br>`;
+                for (let i = 0; i < Math.min(10, data.worst_mid.length); i++) {
+                    const w = data.worst_mid[i];
+                    html += `${i+1}. n=${w.n}, λ=${w.lambda.toFixed(4)}, H=${w.H}, k_hit=${w.k_hit}<br>`;
+                }
+                html += `<hr><strong>Worst Edge (Top 10):</strong><br>`;
+                for (let i = 0; i < Math.min(10, data.worst_edge.length); i++) {
+                    const w = data.worst_edge[i];
+                    html += `${i+1}. n=${w.n}, λ=${w.lambda.toFixed(4)}, H=${w.H}, k_hit=${w.k_hit}<br>`;
+                }
+                output.innerHTML = html;
             } else {
                 output.innerHTML = `❌ Error: ${JSON.stringify(data)}`;
             }
@@ -444,7 +451,7 @@
     //experiment 4: normalized stats
     document.getElementById('statsBtn').addEventListener('click', showNormalizedStats);
     // to delete button for database or table.
-    document.getElementById('resetFirstHitBtn').addEventListener('click', resetFirstHit);
+    document.getElementById('worstCasesBtn').addEventListener('click', showWorstCases);
 
     // Auto-check stats on page load
     checkStats();
