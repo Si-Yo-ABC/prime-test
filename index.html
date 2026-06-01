@@ -167,6 +167,18 @@
 </div>
 
     <hr>
+<h2>Experiment 3: Normalized Depth (λ = k_hit / H)</h2>
+<label>🔢 Even number (n)</label>
+<input type="number" id="normNumber" value="100" step="2">
+<div class="flex">
+    <button id="computeNormBtn">📏 Compute & Store Normalized Depth</button>
+    <button id="fetchNormBtn">🔍 Fetch Normalized Depth</button>
+</div>
+<div id="normOutput" class="output" style="margin-top:0.5rem;">
+    💡 λ values will appear here.
+</div>
+
+    <hr>
 <div class="flex">
     <button id="resetFirstHitBtn" class="danger-btn">🧹 RESET First-Hit Data (Add new columns & clear)</button>
 </div>
@@ -326,6 +338,50 @@
         output.innerHTML = prefix + message + '<br>' + output.innerHTML;
     }
 
+    // experiment 3: normalized depth
+    // Compute and store normalized depth for given n
+    async function computeNormalized() {
+        let n = parseInt(document.getElementById('normNumber').value, 10);
+        if (isNaN(n) || n % 2 !== 0 || n <= 2) {
+            logNorm("Please enter a valid even number > 2", true);
+            return;
+        }
+        logNorm(`Computing normalized depth for n = ${n} ...`);
+        try {
+            const { status, data } = await apiCall(`/compute_normalized/${n}`);
+            if (status === 200) {
+                logNorm(`✅ λ_mid = ${data.lambda_mid.toFixed(4)}, λ_edge = ${data.lambda_edge.toFixed(4)} (H=${data.H})`, false, true);
+                logNorm(`k_hit_mid = ${data.k_hit_mid}, k_hit_edge = ${data.k_hit_edge}`, false);
+            } else {
+                logNorm(`Error ${status}: ${JSON.stringify(data)}`, true);
+            }
+        } catch (err) {
+            logNorm(`Request error: ${err.message}`, true);
+        }
+    }
+    
+    // Fetch already computed normalized depth
+    async function fetchNormalized() {
+        let n = parseInt(document.getElementById('normNumber').value, 10);
+        if (isNaN(n)) return;
+        logNorm(`Fetching normalized depth for n = ${n} ...`);
+        const { status, data } = await apiCall(`/experiment/normalized/${n}`);
+        if (status === 200) {
+            logNorm(`✅ λ_mid = ${data.lambda_mid.toFixed(4)}, λ_edge = ${data.lambda_edge.toFixed(4)} (H=${data.H})`, false, true);
+            logNorm(`k_hit_mid = ${data.k_hit_mid}, k_hit_edge = ${data.k_hit_edge}`, false);
+        } else if (status === 404) {
+            logNorm(`❌ Not computed yet. Use "Compute & Store" first.`, true);
+        } else {
+            logNorm(`Error ${status}: ${JSON.stringify(data)}`, true);
+        }
+    }
+    
+    function logNorm(message, isError = false, isSuccess = false) {
+        const output = document.getElementById('normOutput');
+        const prefix = isError ? '❌ ' : (isSuccess ? '✅ ' : '📌 ');
+        output.innerHTML = prefix + message + '<br>' + output.innerHTML;
+    }
+
     //this is to delete database or tables
     async function resetFirstHit() {
         if (!confirm("⚠️ This will DELETE ALL existing first-hit data and add new columns (if missing). Proceed?")) return;
@@ -352,6 +408,9 @@
     //experiment 2:  G_H(n)
     document.getElementById('computeCorrBtn').addEventListener('click', computeCorridor);
     document.getElementById('fetchCorrBtn').addEventListener('click', fetchCorridor);
+    //experiment 3: normalized depth
+    document.getElementById('computeNormBtn').addEventListener('click', computeNormalized);
+    document.getElementById('fetchNormBtn').addEventListener('click', fetchNormalized);
     // to delete button for database or table.
     document.getElementById('resetFirstHitBtn').addEventListener('click', resetFirstHit);
 
