@@ -186,8 +186,10 @@
 </div>
     
     <hr>
+<!-- Inside the <hr> section, after the existing reset button -->
 <div class="flex">
     <button id="resetFirstHitBtn" class="danger-btn">🧹 RESET First-Hit Data (Add new columns & clear)</button>
+    <button id="resetAllBtn" class="danger-btn" style="background:#b91c1c;">⚠️ RESET ALL DATA (Clear everything)</button>
 </div>
 
 <script>
@@ -436,6 +438,27 @@
         }
     }
 
+    // Reset all data (delete all rows from all tables)
+    async function resetAllData() {
+        if (!confirm("⚠️ This will DELETE ALL DATA from ALL TABLES (first-hit, corridor, normalized, worst cases, jobs).\nAre you sure?")) return;
+        log("Resetting all data...");
+        try {
+            const { status, data } = await apiCall('/reset_all', 'DELETE');
+            if (status === 200) {
+                log(`✅ ${data.message}`, false, true);
+                checkStats();  // refresh stats
+                // also clear output areas if needed
+                document.getElementById('corrOutput').innerHTML = '💡 Corridor data cleared.';
+                document.getElementById('normOutput').innerHTML = '💡 Normalized data cleared.';
+                document.getElementById('worstOutput').innerHTML = '💡 Worst cases cleared.';
+            } else {
+                log(`❌ Reset failed (${status}): ${JSON.stringify(data)}`, true);
+            }
+        } catch (err) {
+            log(`Request error: ${err.message}`, true);
+        }
+    }
+
     // Wire buttons
     document.getElementById('checkHealthBtn').addEventListener('click', checkStats);
     document.getElementById('clearOutputBtn').addEventListener('click', clearOutput);
@@ -452,6 +475,7 @@
     document.getElementById('worstCasesBtn').addEventListener('click', showWorstCases);
     // to delete button for database or table.
     document.getElementById('resetFirstHitBtn').addEventListener('click', resetFirstHit);
+    document.getElementById('resetAllBtn').addEventListener('click', resetAllData);
 
     // Auto-check stats on page load
     checkStats();
