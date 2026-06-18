@@ -438,21 +438,21 @@
         }
     }
 
-    // Reset all data (delete all rows from all tables)
+    // Reset ALL data by physically deleting the database file (nuclear option)
     async function resetAllData() {
-        if (!confirm("⚠️ This will DELETE ALL DATA from ALL TABLES (first-hit, corridor, normalized, worst cases, jobs).\nAre you sure?")) return;
-        log("Resetting all data...");
+        if (!confirm("⚠️ This will PHYSICALLY DELETE the entire database file and recreate it.\nAll data (first-hit, corridor, normalized, worst cases, jobs) will be lost FOREVER.\nAre you sure?")) return;
+        log("🔥 Nuking database...");
         try {
-            const { status, data } = await apiCall('/reset_all', 'DELETE');
+            const { status, data } = await apiCall('/nuke_db', 'DELETE');
             if (status === 200) {
                 log(`✅ ${data.message}`, false, true);
                 checkStats();  // refresh stats
-                // also clear output areas if needed
+                // also clear output areas
                 document.getElementById('corrOutput').innerHTML = '💡 Corridor data cleared.';
                 document.getElementById('normOutput').innerHTML = '💡 Normalized data cleared.';
                 document.getElementById('worstOutput').innerHTML = '💡 Worst cases cleared.';
             } else {
-                log(`❌ Reset failed (${status}): ${JSON.stringify(data)}`, true);
+                log(`❌ Nuke failed (${status}): ${JSON.stringify(data)}`, true);
             }
         } catch (err) {
             log(`Request error: ${err.message}`, true);
